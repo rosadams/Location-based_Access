@@ -21,7 +21,7 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
     table {
       font-family: arial, sans-serif;
       border-collapse: collapse;
-      width: 80%;
+      width: 90%;
     }
 
     td, th {
@@ -29,6 +29,10 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
       text-align: left;
       padding: 8px;
     }
+
+    .notbold{
+        font-weight:normal
+    }​
 
 
 
@@ -46,7 +50,7 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
           <tr>
             <th>Zone</th>
             <th>Policy</th>
-            <th>Groups<br><font face="sans-serif" size="2"><i>Hold down the Ctrl (windows) / Command (Mac) button to select multiple options</i></font></th>
+              <th>Groups<br><font face="Courier" size="2"><span class='notbold'><i>Hold down Ctrl (Windows) / Command (Mac) to select multiple options</i></span></font></th>
           </tr>
 
     {%- for zone, policy in zones.items() %}
@@ -83,58 +87,12 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
         </tr>
     {%- endfor %}
 
-<!--
-{#
-        <input type="checkbox" name="zone3" value="ZoneC"> Zone C
-            <select name="policy3">
-                <option value="allow">Allow</option>
-                <option value="deny">Deny</option>
-                <option value="acl">ACL</option>
-            </select>
 
-            <select name="group3" multiple>
-                <option value="loc-testing" selected>loc-testing</option>
-                <option value="nurses">Nurses</option>
-                <option value="doctors" selected>Doctors</option>
-                <option value="employees">Employees</option>
-            </select>
+        <tr>
+        <td><input type="checkbox" name="zone_default" value="default_policy"> Default Policy<br>
+        <font face="Courier" size="2"><span class='notbold'><i>Zones without a defined policy will be assigned the default policy.</i></span></font
 
-        <br><br>
-
-        <input type="checkbox" name="zone4" value="ZoneD"> Zone D
-            <select name="policy4">
-                <option value="allow">Allow</option>
-                <option value="deny">Deny</option>
-                <option value="acl">ACL</option>
-            </select>
-
-            <input type="checkbox" name="group3" value="loc-testing"> loc-testing
-            <input type="checkbox" name="group3" value="nurses"> Nurses
-            <input type="checkbox" name="group3" value="doctors"> Doctors
-            <input type="checkbox" name="group3" value="employees"> Employees
-
-        <br><br>
-
-        <input type="checkbox" name="zone5" value="Zone E"> Zone E
-            <select name="policy5">
-                <option value="allow">Allow</option>
-                <option value="deny">Deny</option>
-                <option value="acl">ACL</option>
-            </select>
-
-            <select name="group5" multiple>
-                <option value="loc-testing" selected>loc-testing</option>
-                <option value="nurses">Nurses</option>
-                <option value="doctors" selected>Doctors</option>
-                <option value="employees">Employees</option>
-            </select>
-
-        <br>
-
-#}
--->
-        <p>For Zones without a defined policy the default policy will be assigned</p>
-        <td><input type="checkbox" name="zone_default" value="default_policy"> Default Policy</td>
+        </td>
             <td>
             <select name="policy_default">
                 {%- for policy, selected in default_policy['policy'].items() %}

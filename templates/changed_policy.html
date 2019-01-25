@@ -18,9 +18,10 @@
       padding: 8px;
     }
 
-    tr:nth-child(even) {
+    th {
     background-color: #dddddd;
     }
+
     </style>
 
 </head>
@@ -42,21 +43,23 @@
             <th>Groups</th>
           </tr>
 
-    {%- for number, changed in changed_zones.items() -%}
-
-
+    {%- for zone in changed_zones -%}
                 <tr>
-                    <td>{{ changed.name }}</td>
-                        <td>{{ changed.policy }}</td>
-                        <td>{{ changed.group }}</td>
-
+                    <td>{{ zone.zone_name }}</td>
+                        <td>{{ zone.policy }}</td>
+                        <td>{{ zone.group|join(", ") }} </td>
                 </tr>
-
 
     {%- endfor -%}
             </table>
 
     {%- endif -%}
+
+<br><br>
+ <form name = "location" action="{{ url_for('config_update')}}" method="get" >
+        <input type="submit" value="Change Additional Zones">
+
+    </form>
 
 </body>
 </html>
