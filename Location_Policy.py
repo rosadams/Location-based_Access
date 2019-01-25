@@ -18,34 +18,48 @@ class Location_Policy:
                 self.zone_list = cmx_get_zones(cmx_server)
                 for zone in self.zone_list:
                     self.data.get("zone_policies").append(
-                        {"zone_name": zone, "zone_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}})
+                        {"zone_name": zone.get("hierarchy"), "zone_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}})
+                # Register zones via CMX API
+                cmx_register_zone(self.cmx_server, self.zone_list)
+                # backup to file
                 json.dump(self.data, self.backup_file, indent=4)
 
 
 
-
-    def get(self):
-        #pull zone list from CMX.  Add any newly configured zones to the location policy data structure (data) with default (allow ALL) policy.
-        self.cmx_zones = set(cmx_get_zones(self.cmx_server))
+    def sync_CMX_zones(self):
+        # pull zone list from CMX.  Add any newly configured zones to the location policy data structure (data) with default (allow ALL) policy.
+        self.cmx_zones = cmx_get_zones(self.cmx_server)
+        self.cmx_zone_names = set([n.get("hierarchy") for n in self.cmx_zones])
         self.policy_zones = {n.get("zone_name") for n in self.data.get("zone_policies")}
 
-        if self.policy_zones ^ self.cmx_zones != set():
-            self.added_zones = self.cmx_zones - self.policy_zones
+        if self.policy_zones ^ self.cmx_zone_names != set():
+            self.added_zones = self.cmx_zone_names - self.policy_zones
             if self.added_zones != set():
-                print("adding zones to policy DB", self.added_zones)
+                # Zone/s have been added to CMX.  Add them to the policy object
+                #print("adding zones to policy object", self.added_zones)
                 for n in self.added_zones:
                     self.data.get("zone_policies").append(
                         {"zone_name": n, "zone_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}})
+
             else:
-                self.deleted_zones = self.policy_zones - self.cmx_zones
-                print("deleting zones from policy DB", self.added_zones)
+                self.deleted_zones = self.policy_zones - self.cmx_zone_names
+                # Zone/s have been deleted from CMX.  Delete them from the policy object
+                #print("deleting zones from policy DB", self.added_zones)
                 for n in self.data.get("zone_policies")[:]:
                     if n.get("zone_name") in self.deleted_zones:
                         self.data.get("zone_policies").remove(n)
+            # Register zones in CMX
+            #cmx_register_zone(self.cmx_server, self.cmx_zones)
             # backup updated policy
             self.backup()
         else:
-            print("policy and CMX zones are already sync'd")
+            pass
+            #print("policy and CMX zones are already sync'd")
+        return
+
+
+    def get(self):
+        self.sync_CMX_zones()
         return self.data
 
 
@@ -89,7 +103,6 @@ class Location_Policy:
             return False
         else:
             return True
-
 
 
     def zone_exists(self, zone):

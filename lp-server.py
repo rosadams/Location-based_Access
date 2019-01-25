@@ -102,7 +102,7 @@ def cmxreceiver():
     if request.method == 'POST' :
         #query = request.form['query'] #this is an example how you'd get a variable -query- directly out of the form
         area_json = request.get_json()
-        zone = area_json.get("notifications")[0].get("locationMapHierarchy").split(">")[-1]
+        zone = area_json.get("notifications")[0].get("locationMapHierarchy")
         mac_address = area_json.get("notifications")[0].get("deviceId")
         in_out = area_json.get("notifications")[0].get("subscriptionName").split()[-1]
 
