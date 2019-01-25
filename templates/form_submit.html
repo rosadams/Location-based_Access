@@ -1,0 +1,132 @@
+
+<!--
+{#
+
+Sample web references:
+https://overiq.com/flask-101/basics-of-jinja-template-language/
+http://jinja.pocoo.org/docs/2.10/templates/#expressions
+https://www.webforefront.com/django/usebuiltinjinjafilters.html
+
+#}
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Location Policy Update</title>
+
+    <style>
+    option   {color: blue;}
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 90%;
+    }
+
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+
+    .notbold{
+        font-weight:normal
+    }​
+
+
+
+    </style>
+</head>
+
+<body>
+
+    <form name = "location" action="{{ url_for('config_update')}}" method="post" >
+
+
+        <h1>Location Policy and Update</h1>
+
+        <table>
+          <tr>
+            <th>Zone</th>
+            <th>Policy</th>
+              <th>Groups<br><font face="Courier" size="2"><span class='notbold'><i>Hold down Ctrl (Windows) / Command (Mac) to select multiple options</i></span></font></th>
+          </tr>
+
+    {%- for zone, policy in zones.items() %}
+
+        {% set zone_var = ['zone', loop.index]|join %}
+        {% set policy_var = ['policy', loop.index]|join %}
+        {% set group_var = ['group', loop.index]|join %}
+<!--
+{#
+        <p>This is zone {{ zone }}</p>
+        <p>This is policy {{ policy }}</p>
+        <p>This is default_policy policy-policy {{ policy['policy'] }}</p>
+        <p>This is default_policy policy-groups {{ policy['groups'] }}</p>
+#}
+-->
+        <tr>
+
+        <td><input type="checkbox" name="{{ zone_var }}" value="{{ zone }}"> {{ zone }}</td>
+            <td>
+            <select name="{{ policy_var }}" >
+                {%- for policy_defined, selected in policy['policy'].items() %}
+                    <option value={{ policy_defined | lower }}  {{ selected }}>{{ policy_defined }}</option>
+                {%- endfor %}
+            </select>
+            </td>
+
+            <td>
+            <select name="{{ group_var }}" multiple size={{ policy['groups'] | length + 1 }}>
+                {%- for group, selected in policy['groups'].items() %}
+                    <option value={{ group }}  {{ selected }}>{{ group }}</option>
+                {%- endfor %}
+            </select>
+            </td>
+        </tr>
+    {%- endfor %}
+
+
+        <tr>
+        <td><input type="checkbox" name="zone_default" value="default_policy"> Default Policy<br>
+        <font face="Courier" size="2"><span class='notbold'><i>Zones without a defined policy will be assigned the default policy.</i></span></font
+
+        </td>
+            <td>
+            <select name="policy_default">
+                {%- for policy, selected in default_policy['policy'].items() %}
+                    <option value={{ policy | lower }}  {{ selected }}>{{ policy }}</option>
+                {%- endfor %}
+
+            </select>
+            </td>
+
+            <td>
+            <select name="group_default" multiple size={{ default_policy['groups'] | length + 1 }}>
+                {%- for group, selected in default_policy['groups'].items() %}
+                    <option value={{ group }}  {{ selected }}>{{ group }}</option>
+                {%- endfor %}
+
+            </select>
+            </td>
+            </tr>
+
+            </table>
+
+ <!--
+
+        <p>This is default_policy policy{{ default_policy['policy'] }}</p>
+        <p>This is default_policy groups: {{ default_policy['groups'] }}</p>
+        <input type="submit" value="Reset" formaction="{{ url_for('config_update')}}" method="get">
+-->
+
+        <input type="submit" value="Submit">
+        <input type="reset">
+
+    </form>
+
+<p>Click the "Submit" button to submit the query or "Reset" to set the form to default.</p>
+
+</body>
+</html>
