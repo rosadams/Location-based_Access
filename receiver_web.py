@@ -73,8 +73,12 @@ def config_update():
             saved_policy = json.load(json_file)
             print(json.dumps(saved_policy, indent=4))
 
-        ise_groups = ['loc-testing', 'Nurses', 'Doctors', 'Employees', 'Test']
-        policy_options = ['Allow', 'Deny', 'ACL']
+        ise_groups = ['loc-testing', 'Nurses', 'Doctors', 'Employees', 'Test',]
+        ise_groups.append('ALL')
+        # move the 'ALL' element to front of list
+        ise_groups.insert(0, ise_groups.pop(-1))
+
+        policy_options = ['Allow', 'Deny']
 
         default_policy = render_policy(saved_policy['default_policy'], ise_groups, policy_options, 'default_policy')
         print('default_policy:', default_policy)
@@ -93,7 +97,7 @@ def config_update():
     else:
 
         print(request.form)
-        changed_zones = {}
+        changed_zones = []
         zone_numbers = []
 
         for key, value in request.form.items():
@@ -104,15 +108,16 @@ def config_update():
 
         for element in zone_numbers:
             zone_name = request.form.get('zone' + element)
+            policy = request.form.get('policy' + element)
             group_list = request.form.getlist('group' + element)
-            policy_list = request.form.getlist('policy' + element)
-            changed_zones[element] = {'name' : zone_name,'policy': policy_list, 'group': group_list}
+            changed_zones.append({'zone_name' : zone_name,'policy': policy, 'group': group_list})
 
-        print(json.dumps(changed_zones, indent=4))
+        for zone in changed_zones:
+            print(json.dumps(zone, indent=4))
 
         ross_object_function_to_update_policy(changed_zones)
 
-        return render_template('changed_policy.html', changed_zones = changed_zones)
+        return render_template('changed_policy.html', changed_zones=changed_zones)
 
 if __name__ == "__main__" :
 
