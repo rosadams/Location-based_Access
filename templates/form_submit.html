@@ -43,7 +43,6 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
 
     <form name = "location" action="{{ url_for('config_update')}}" method="post" >
 
-
         <h1>Location Policy and Update</h1>
 
         <table>
@@ -80,7 +79,7 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
             <td>
             <select name="{{ group_var }}" multiple size={{ policy['groups'] | length + 1 }}>
                 {%- for group, selected in policy['groups'].items() %}
-                    <option value={{ group }}  {{ selected }}>{{ group }}</option>
+                    <option value="{{ group }}"  {{ selected }}>{{ group }}</option>
                 {%- endfor %}
             </select>
             </td>
