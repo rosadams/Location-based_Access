@@ -19,7 +19,6 @@ def ise_get_usergroups(server):
     return (sorted(grouplist))
 
 
-
 def ise_get_usergroupid(server, groupname):
     #returns the groupID for a given group name
 
@@ -30,7 +29,6 @@ def ise_get_usergroupid(server, groupname):
     return response.json().get("SearchResult").get("resources")[0].get("id")
 
 
-
 def ise_get_endpoint_info(server, mac_address):
     """returns a dictionary containing the mac, staticGroupAssignment, and groupId of the endpoint, given mac address/name
        (str) of that device.
@@ -39,13 +37,12 @@ def ise_get_endpoint_info(server, mac_address):
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-    endpoint_info = {"mac_address": response.json().get("ERSEndPoint").get("mac"),
+    endpoint_info = {"mac_address": response.json().get("ERSEndPoint").get("mac").lower(),
                      "id": response.json().get("ERSEndPoint").get("id"),
                      "staticGroupAssignment": response.json().get("ERSEndPoint").get("staticGroupAssignment"),
                      "groupId": response.json().get("ERSEndPoint").get("groupId"),
                      }
     return endpoint_info
-
 
 
 def ise_get_device_usergroup(server, mac_address):
@@ -93,12 +90,11 @@ def ise_blacklist_mac(server, mac_address):
     return requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
 
 
-
 def ise_unblacklist_mac(server, mac_info):
     """ unblacklists mac_address and resets staticGroupAssignment and groupId to their original values
         (stored in mac_info dictionary).
     """
-
+    print(mac_info)
     call = "/ers/config/endpoint/" + mac_info.get("id")
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -116,7 +112,6 @@ def ise_unblacklist_mac(server, mac_info):
     return requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
 
 
-
 def ise_CoA(server, mac_address):
     # Issues a CoA for the given mac_address
 
@@ -125,7 +120,6 @@ def ise_CoA(server, mac_address):
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
     return
-
 
 
 def main():
@@ -150,7 +144,6 @@ def main():
     #print(ise_get_endpoint_info(ise_server, "D0:2B:20:CA:AB:77"))
 
 
-
 """
 #Test Blacklist and Unblacklist
     mac_info = ise_get_endpoint_info(ise_server, "00:0C:29:1F:2B:C0")
@@ -163,7 +156,6 @@ def main():
     print(ise_get_endpoint_info(ise_server, "00:0C:29:1F:2B:C0"))
     
 """
-
 
 if __name__ == "__main__":
     main()

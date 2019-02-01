@@ -12,13 +12,13 @@ class Location_Policy:
         except:
             with open(filename, "w") as self.backup_file:
                 self.data = {"blacklisted": [], "zone_policies": [],
-                             "default_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}}
+                             "default_policy": {"allow_deny": "allow", "group_list": ["ALL_ACCOUNTS (default)"], "acl_list": []}}
 
                 # get list of zones from CMX to populate zone policy data structure
                 self.zone_list = cmx_get_zones(cmx_server)
                 for zone in self.zone_list:
                     self.data.get("zone_policies").append(
-                        {"zone_name": zone.get("hierarchy"), "zone_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}})
+                        {"zone_name": zone.get("hierarchy"), "zone_policy": {"allow_deny": "allow", "group_list": ["ALL_ACCOUNTS (default)"], "acl_list": []}})
                 # Register zones via CMX API
                 cmx_register_zone(self.cmx_server, self.zone_list)
                 # backup to file
@@ -39,7 +39,7 @@ class Location_Policy:
                 #print("adding zones to policy object", self.added_zones)
                 for n in self.added_zones:
                     self.data.get("zone_policies").append(
-                        {"zone_name": n, "zone_policy": {"allow_deny": "allow", "policies_list": ["ALL"], "acl_list": []}})
+                        {"zone_name": n, "zone_policy": {"allow_deny": "allow", "group_list": ["ALL_ACCOUNTS (default)"], "acl_list": []}})
 
             else:
                 self.deleted_zones = self.policy_zones - self.cmx_zone_names
@@ -63,12 +63,22 @@ class Location_Policy:
         return self.data
 
 
-    def update(self, updated_policy):
-        self.data = updated_policy
-        # backup location policy changes to backup file
-        with open(self.filename, "w") as self.backup_file:
-            json.dump(self.data, self.backup_file, indent=4)
-        return
+    def update(self, policy_updates):
+        # Apply updates to policy object and create list of zones to check
+        self.zones_to_check = []
+        for updt in policy_updates:
+            self.zones_to_check.append(updt["zone_name"])
+            if updt["zone_name"] == "default_policy":
+                self.data["default_policy"]["allow_deny"] = updt["allow_deny"]
+                self.data["default_policy"]["group_list"] = updt["group_list"]
+            else:
+                for pol in self.data["zone_policies"]:
+                    if pol["zone_name"] == updt["zone_name"]:
+                        pol["zone_policy"]["allow_deny"] = updt["allow_deny"]
+                        pol["zone_policy"]["group_list"] = updt["group_list"]
+        self.backup()
+        return self.zones_to_check
+
 
 
     def get_for_zone(self, zone):
@@ -81,13 +91,10 @@ class Location_Policy:
     def match_zone_groups(self, zone, grouplist):
         # Returns True if any groups in grouplist match any groups in location_policy grouplist for given zone.  False
         # if no matches.
-
-        print(grouplist)
         groupset = set(grouplist)
         for n in self.data.get("zone_policies"):
             if n.get("zone_name") == zone:
-                policyset = set(n.get("zone_policy").get("policies_list"))
-                print(policyset)
+                policyset = set(n.get("zone_policy").get("group_list"))
         if groupset.intersection(policyset) == set():
             return False
         else:
@@ -98,7 +105,7 @@ class Location_Policy:
         # Returns True if any groups in grouplist match any groups in location_policy grouplist for for the default policy.  False
         # if no matches.
         groupset = set(grouplist)
-        policyset = set(self.data.get("default_policy").get("policies_list"))
+        policyset = set(self.data.get("default_policy").get("group_list"))
         if groupset.intersection(policyset) == set():
             return False
         else:
@@ -106,7 +113,7 @@ class Location_Policy:
 
 
     def zone_exists(self, zone):
-        #Returns True if zone exists in loc_policy zone list
+        # Returns True if zone exists in loc_policy zone list
         for n in self.data.get("zone_policies"):
             if n.get("zone_name") == zone:
                 return True
@@ -129,11 +136,13 @@ class Location_Policy:
         for n in self.data.get("blacklisted"):
             if n.get("mac_address") == mac_address:
                 return n
+
         return
 
 
     def unblacklist(self, mac_address):
-        for n in self.data.get("blacklisted"):
+        for n in self.data.get("blacklisted")[:]:
+            print("unblacklisting from loc policy")
             if n.get("mac_address") == mac_address:
                 self.data.get("blacklisted").remove(n)
         self.backup()
