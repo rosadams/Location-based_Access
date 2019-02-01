@@ -72,7 +72,7 @@ def ise_blacklist_mac(server, mac_address):
     """ blacklists mac_address
     """
     endpoint_id = ise_get_endpoint_info(server, mac_address).get("id")
-    blacklist = ise_get_usergroupid(server, "Blacklist")
+    blacklist = ise_get_usergroupid(server, "loc_blacklist")
 
     call = "/ers/config/endpoint/" + endpoint_id
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
@@ -114,11 +114,12 @@ def ise_unblacklist_mac(server, mac_info):
 
 def ise_CoA(server, mac_address):
     # Issues a CoA for the given mac_address
-
-    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address + "/1"
+    print("It's fun to stay at the CoA")
+    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/1"
     uri = ("https://" + server["host"] + call)
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+    print(response)
     return
 
 
