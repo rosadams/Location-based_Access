@@ -46,8 +46,8 @@
     {%- for zone in changed_zones -%}
                 <tr>
                     <td>{{ zone.zone_name }}</td>
-                        <td>{{ zone.policy }}</td>
-                        <td>{{ zone.group|join(", ") }} </td>
+                        <td>{{ zone.allow_deny }}</td>
+                        <td>{{ zone.group_list|join(", ") }} </td>
                 </tr>
 
     {%- endfor -%}

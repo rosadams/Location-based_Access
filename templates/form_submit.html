@@ -80,7 +80,7 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
             <td>
             <select name="{{ group_var }}" multiple size={{ policy['groups'] | length + 1 }}>
                 {%- for group, selected in policy['groups'].items() %}
-                    <option value={{ group }}  {{ selected }}>{{ group }}</option>
+                    <option value="{{ group }}"  {{ selected }}>{{ group }}</option>
                 {%- endfor %}
             </select>
             </td>
@@ -105,7 +105,7 @@ https://www.webforefront.com/django/usebuiltinjinjafilters.html
             <td>
             <select name="group_default" multiple size={{ default_policy['groups'] | length + 1 }}>
                 {%- for group, selected in default_policy['groups'].items() %}
-                    <option value={{ group }}  {{ selected }}>{{ group }}</option>
+                    <option value="{{ group }}"  {{ selected }}>{{ group }}</option>
                 {%- endfor %}
 
             </select>
