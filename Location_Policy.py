@@ -36,7 +36,6 @@ class Location_Policy:
             self.added_zones = self.cmx_zone_names - self.policy_zones
             if self.added_zones != set():
                 # Zone/s have been added to CMX.  Add them to the policy object
-                #print("adding zones to policy object", self.added_zones)
                 for n in self.added_zones:
                     self.data.get("zone_policies").append(
                         {"zone_name": n, "zone_policy": {"allow_deny": "allow", "group_list": ["ALL_ACCOUNTS (default)"], "acl_list": []}})
@@ -44,7 +43,6 @@ class Location_Policy:
             else:
                 self.deleted_zones = self.policy_zones - self.cmx_zone_names
                 # Zone/s have been deleted from CMX.  Delete them from the policy object
-                #print("deleting zones from policy DB", self.added_zones)
                 for n in self.data.get("zone_policies")[:]:
                     if n.get("zone_name") in self.deleted_zones:
                         self.data.get("zone_policies").remove(n)
@@ -89,16 +87,23 @@ class Location_Policy:
 
 
     def match_zone_groups(self, zone, grouplist):
-        # Returns True if any groups in grouplist match any groups in location_policy grouplist for given zone.  False
-        # if no matches.
+        # Compares list of user groups to groups listed in location policy for a given zone. returns string.
+        # Returns ALL if all input groups are included in the location policy for that zone
+        #         ANY if any input group is included in the location policy
+        #         NONE if there are no matches at all.
+
         groupset = set(grouplist)
         for n in self.data.get("zone_policies"):
             if n.get("zone_name") == zone:
                 policyset = set(n.get("zone_policy").get("group_list"))
+        #print(groupset)
+        #print(groupset.intersection(policyset))
         if groupset.intersection(policyset) == set():
-            return False
+            return "NONE"
+        elif groupset.intersection(policyset) == groupset:
+                return "ALL"
         else:
-            return True
+            return "ANY"
 
 
     def match_default_groups(self, grouplist):
@@ -107,9 +112,11 @@ class Location_Policy:
         groupset = set(grouplist)
         policyset = set(self.data.get("default_policy").get("group_list"))
         if groupset.intersection(policyset) == set():
-            return False
+            return "NONE"
+        elif groupset.intersection(policyset) == groupset:
+                return "ALL"
         else:
-            return True
+            return "ANY"
 
 
     def zone_exists(self, zone):
