@@ -79,18 +79,3 @@ def cmx_get_nonzonedevices(server):
                  and n.get("dot11Status") == "ASSOCIATED"
                 ]
     return assoc_dev
-
-
-def main():
-    cmx_server = {
-        "host": "10.88.66.124",
-        "server_name": "",
-        "port": "",
-        "user": "admin",
-        "pass": "C1scodna!"
-    }
-
-
-
-if __name__ == "__main__":
-    main()
