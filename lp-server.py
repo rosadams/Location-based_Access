@@ -1,8 +1,43 @@
-import logging
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
+
 from Location_Policy import Location_Policy
 from ISE_API import *
 from CMX_API import *
+from locationbot import get_zones, get_groups, display_zone_policy, change_zone_policy, help, hello
+from webexbot import send_spark_get, send_spark_post, send_spark_delete, check_bot, check_webhook
+
+bot_name = ''
+
+if 'WEBEX_BOT_TOKEN' in os.environ:
+    WEBEX_BOT_TOKEN = os.environ.get('WEBEX_BOT_TOKEN')
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": "Bearer " + WEBEX_BOT_TOKEN
+    }
+
+    WEBEX_URL = "https://api.ciscospark.com/v1"
+
+    bot_name, bot_email = check_bot(WEBEX_URL, headers)
+
+    webhook_name = 'location_query'
+    resources = ['messages', 'memberships']
+    event = 'created'
+    bot_route = '/bot'
+    webhook_vars = {'webhook_name': webhook_name, 'resources': resources, 'event': event, 'bot_route': bot_route}
+
+    print(WEBEX_BOT_TOKEN)
+    print(bot_name)
+    print(bot_email)
+
+    check_webhook(WEBEX_URL, headers, webhook_vars)
+
+else:
+    WEBEX_BOT_TOKEN = 'None'
+
+
+
 
 ise_server = {
     "host": "Satlab-dna-ise.cisco.com",
@@ -13,15 +48,12 @@ ise_server = {
     }
 
 cmx_server = {
-    "host": "10.88.93.188",
+    "host": "10.88.66.124",
     "server_name": "",
     "port": "",
     "user": "admin",
     "pass": "C1scodna!"
     }
-
-# Setup Logging
-
 
 
 bkup_file = "localpolicy.bak"
@@ -40,33 +72,26 @@ def blacklist(mac_address):
         print(ise_get_endpoint_info(ise_server, mac_address))
         policy.blacklist(ise_get_endpoint_info(ise_server, mac_address))
         ise_blacklist_mac(ise_server, mac_address)
-        #ise_CoA(ise_server, mac_address)
+        ise_CoA(ise_server, mac_address)
         print("blacklisting ", mac_address)
 
 
 def unblacklist(mac_address):
-    # if mac address is in the blacklist
-    # 1. unblacklist it in local policy,
-    # 2. unblacklist in ISE
-    # 3. issue CoA.
+    print("mac address: ", mac_address, "policy is already in policy blacklist ->", policy.in_blacklist(mac_address))
     if policy.in_blacklist(mac_address) is not None:
-        print("mac_address is currently blacklisted in local policy. Unblacklisting.")
+        print("mac_address is already blacklisted in local policy")
         ise_unblacklist_mac(ise_server, policy.in_blacklist(mac_address))
-        #ise_CoA(ise_server, mac_address)
+        ise_CoA(ise_server, mac_address)
         policy.unblacklist(mac_address)
-        print("unblaCklisted ", mac_address)
+        print("unblasklisted ", mac_address)
 
 
 def mac_action(mac_address, zone, in_out):
-    print("Getting User Group Info")
-    print(mac_address)
     user_groups = ise_get_device_usergroup(ise_server, mac_address)
-    print("output from ise_get_device_usergroup:",  user_groups)
     user_groups.append("ALL_ACCOUNTS (default)")
-    print(user_groups)
 
 
-    if in_out == "IN":
+    if in_out == "In":
         if policy.zone_exists(zone) is False:
             zone_policy = policy.get_default()
             allow_deny = zone_policy.get("allow_deny")
@@ -77,34 +102,29 @@ def mac_action(mac_address, zone, in_out):
             zone_policy = policy.get_for_zone(zone)
             allow_deny = zone_policy.get("allow_deny")
             group_match = policy.match_zone_groups(zone, user_groups)
-        """
-        if group_match = :
+        if group_match:
             print(mac_address, "in user group/s ___", ", matched zone policy: ", allow_deny, user_groups)
         else:
             print(mac_address, "in user group/s ___", ", did not match zone policy: ", allow_deny, user_groups)
-        """
 
-        if allow_deny == "allow" and  group_match == "NONE":
+
+        if allow_deny == "allow" and  group_match is False:
             print("blacklist:" + mac_address)
-            print(mac_address, "in user group/s: ", user_groups, " does not match", zone, "policy")
-            print(mac_address, "Blacklisted")
-        elif allow_deny == "deny" and  group_match == "ALL":
-            print(mac_address, "in user group/s: ", user_groups, " does not match", zone, "policy")
-            print(mac_address, "Blacklisted")
+        elif allow_deny == "deny" and  group_match is True:
+            print("blacklist")
             blacklist(mac_address)
         else:
-            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy")
-            print(mac_address, "UnBlacklisted")
+            print("unblacklist1: ")
             unblacklist(mac_address)
     else:
         print("default policy applied")
         zone_policy = policy.get_default()
         allow_deny = zone_policy.get("allow_deny")
         group_match = policy.match_default_groups(user_groups)
-        print(group_match)
-        if allow_deny == "allow" and  group_match == "NONE":
+
+        if allow_deny == "allow" and  group_match == False:
             print("default blacklist1:")
-        elif allow_deny == "deny" and  group_match == "ALL":
+        elif allow_deny == "deny" and  group_match == True:
             print("default blacklist2")
             blacklist(mac_address)
         else:
@@ -154,10 +174,11 @@ def cmxreceiver():
         area_json = request.get_json()
         zone = area_json.get("notifications")[0].get("locationMapHierarchy")
         mac_address = area_json.get("notifications")[0].get("deviceId")
-        in_out = area_json.get("notifications")[0].get("boundary").replace("SIDE", "")
+        in_out = area_json.get("notifications")[0].get("subscriptionName").split()[-1]
         print(mac_address, zone, in_out)
         mac_action(mac_address, zone, in_out)
         return "OK"
+
 
 
 @app.route('/config_update', methods =['GET', 'POST'])
@@ -187,6 +208,7 @@ def config_update():
             if 'zone' in key:
                 zone_numbers.append(key.strip('zone'))
 
+
         for element in zone_numbers:
             zone_name = request.form.get('zone' + element)
             policy_option = request.form.get('policy' + element)
@@ -206,6 +228,92 @@ def config_update():
         return render_template('changed_policy.html', changed_zones=changed_zones)
 
 
+@app.route('/bot', methods =['GET', 'POST'])
+def bot():
+
+    if request.method == 'GET' :
+        print('Hello bot get request')
+        message = 'The Location Bot is not running!'
+
+        if bot_name != '':
+            message = '<br/><br/>Location Policy Bot is up and running. @mention {0} from Teams <strong>@{0} help</strong> to start!'.format(bot_name)
+
+        return message
+
+
+    elif request.method == 'POST':
+
+        with open('location_policy.json') as json_file:
+            saved_policy = json.load(json_file)
+            #print(json.dumps(saved_policy, indent=4))
+
+        ise_groups = ['loc-testing', 'Nurses', 'Doctors', 'Employees', 'ALL_ACCOUNTS (default)', 'GuestType_SocialLogin (default)', 'Accounting', 'HR']
+
+        webhook = request.get_json()
+        print(webhook)
+
+        resource = webhook['resource']
+        senders_email = webhook['data']['personEmail']
+        room_id = webhook['data']['roomId']
+
+        if resource == "memberships" and senders_email == bot_email:
+            print('webhook is: ', webhook)
+            send_spark_post("https://api.ciscospark.com/v1/messages",
+                            {
+                                "roomId": room_id,
+                                "markdown": (hello() +
+                                             "**Note: This is a group space and you have to call "
+                                             "me specifically with `@%s` for me to respond.**" % bot_name)
+                            }
+                            )
+
+        if ("@webex.bot" not in webhook['data']['personEmail']):
+            print('Requester email= ', webhook['data']['personEmail'])
+            print('msgID= ', webhook['data']['id'])
+            result = send_spark_get(
+                'https://api.ciscospark.com/v1/messages/{}'.format(webhook['data']['id']), headers)
+            print('Raw request=', result['text'])
+            message = result['text']
+            message = message.replace(bot_name, '').strip()
+            message = message.split()
+            message[0] = message[0].lower()
+            message = ' '.join(message)
+            print('Parsed request=', message)
+            if message.startswith('help'):
+                msg = help()
+            elif message.startswith('hello'):
+                msg = hello(bot_name)
+            elif message.startswith('zones'):
+                msg = get_zones(saved_policy)
+            elif message.startswith('groups'):
+                msg = get_groups(ise_groups)
+            elif message.startswith('display'):
+                zone = message.replace('display', '')
+                msg = display_zone_policy(saved_policy, zone)
+            elif message.startswith('change'):
+                policy = message.replace('change', '')
+                error = ''
+                if not ' policy' in policy:
+                    error = 'Confirm Change policy request is using the correct syntax:<br/>'
+                    error += ('change [zone_name] policy=[policy] groups=([groups])')
+                elif not ' groups' in policy:
+                    error = 'Confirm Change policy request is using the correct syntax:<br/>'
+                    error += ('change [zone_name] policy=[policy] groups=([groups])')
+                msg, changed_zones = change_zone_policy(policy, error)
+
+                print(json.dumps(changed_zones, indent=4))
+                ross_object_function_to_update_policy(changed_zones)
+
+            else:
+                msg = "Sorry, but I did not understand your request. Type `Help` to see what I can do"
+
+            if msg != None:
+                send_spark_post("https://api.ciscospark.com/v1/messages", headers,
+                                {"roomId": webhook['data']['roomId'], "markdown": msg})
+
+    return "true"
+
+
 
 if __name__ == "__main__" :
 
@@ -213,4 +321,4 @@ if __name__ == "__main__" :
 
     print('\n********   Starting up Flask Web...    ********\n\n')
 
-    app.run(host='0.0.0.0', port=flask_port, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=flask_port, debug=True)
