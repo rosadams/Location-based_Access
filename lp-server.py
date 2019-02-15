@@ -1,3 +1,4 @@
+import os
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 
 from Location_Policy import Location_Policy
@@ -245,7 +246,7 @@ def bot():
 
     elif request.method == 'POST':
 
-        with open('location_policy.json') as json_file:
+        with open('localpolicy.bak') as json_file:
             saved_policy = json.load(json_file)
             #print(json.dumps(saved_policy, indent=4))
 
@@ -304,7 +305,9 @@ def bot():
                 msg, changed_zones = change_zone_policy(policy, error)
 
                 print(json.dumps(changed_zones, indent=4))
-                ross_object_function_to_update_policy(changed_zones)
+
+                policy.update(changed_zones)
+                #ross_object_function_to_update_policy(changed_zones)
 
             else:
                 msg = "Sorry, but I did not understand your request. Type `Help` to see what I can do"

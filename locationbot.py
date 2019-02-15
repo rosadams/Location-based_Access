@@ -96,7 +96,7 @@ def change_zone_policy(policy, error):
 
     regex_alternate = r"\s*([\w>\s]+[\w])\s+(policy\s*=\s*[allowdenyAD]+)\s+(groups\s*=\s*[\w\s\(\),]+)"
 
-    regex = r"\s*([a-zA-Z0-9>\s]*[a-zA-Z0-9])\s*(policy\s*=\s*[allowdenyAD]*)\s*(groups\s*=\s*[a-zA-Z_\s\(\),]*)"
+    regex = r"\s*([a-zA-Z0-9>\s]*[a-zA-Z0-9])\s*(policy\s*=\s*[allowdenyAD]*)\s*(groups\s*=\s*[a-zA-Z_\s\(\),-]*)"
     print(policy)
     policy_split = re.search(regex, policy)
     zone = policy_split.group(1)
