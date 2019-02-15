@@ -1,5 +1,5 @@
+import logging
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
-
 from Location_Policy import Location_Policy
 from ISE_API import *
 from CMX_API import *
@@ -13,12 +13,16 @@ ise_server = {
     }
 
 cmx_server = {
-    "host": "10.88.66.124",
+    "host": "10.88.93.188",
     "server_name": "",
     "port": "",
     "user": "admin",
     "pass": "C1scodna!"
     }
+
+# Setup Logging
+
+
 
 
 bkup_file = "localpolicy.bak"
@@ -37,26 +41,33 @@ def blacklist(mac_address):
         print(ise_get_endpoint_info(ise_server, mac_address))
         policy.blacklist(ise_get_endpoint_info(ise_server, mac_address))
         ise_blacklist_mac(ise_server, mac_address)
-        ise_CoA(ise_server, mac_address)
+        #ise_CoA(ise_server, mac_address)
         print("blacklisting ", mac_address)
 
 
 def unblacklist(mac_address):
-    print("mac address: ", mac_address, "policy is already in policy blacklist ->", policy.in_blacklist(mac_address))
+    # if mac address is in the blacklist
+    # 1. unblacklist it in local policy,
+    # 2. unblacklist in ISE
+    # 3. issue CoA.
     if policy.in_blacklist(mac_address) is not None:
-        print("mac_address is already blacklisted in local policy")
+        print("mac_address is currently blacklisted in local policy. Unblacklisting.")
         ise_unblacklist_mac(ise_server, policy.in_blacklist(mac_address))
-        ise_CoA(ise_server, mac_address)
+        #ise_CoA(ise_server, mac_address)
         policy.unblacklist(mac_address)
-        print("unblasklisted ", mac_address)
+        print("unblaCklisted ", mac_address)
 
 
 def mac_action(mac_address, zone, in_out):
+    print("Getting User Group Info")
+    print(mac_address)
     user_groups = ise_get_device_usergroup(ise_server, mac_address)
+    print("output from ise_get_device_usergroup:",  user_groups)
     user_groups.append("ALL_ACCOUNTS (default)")
+    print(user_groups)
 
 
-    if in_out == "In":
+    if in_out == "IN":
         if policy.zone_exists(zone) is False:
             zone_policy = policy.get_default()
             allow_deny = zone_policy.get("allow_deny")
@@ -67,29 +78,34 @@ def mac_action(mac_address, zone, in_out):
             zone_policy = policy.get_for_zone(zone)
             allow_deny = zone_policy.get("allow_deny")
             group_match = policy.match_zone_groups(zone, user_groups)
-        if group_match:
+        """
+        if group_match = :
             print(mac_address, "in user group/s ___", ", matched zone policy: ", allow_deny, user_groups)
         else:
             print(mac_address, "in user group/s ___", ", did not match zone policy: ", allow_deny, user_groups)
+        """
 
-
-        if allow_deny == "allow" and  group_match is False:
+        if allow_deny == "allow" and  group_match == "NONE":
             print("blacklist:" + mac_address)
-        elif allow_deny == "deny" and  group_match is True:
-            print("blacklist")
+            print(mac_address, "in user group/s: ", user_groups, " does not match", zone, "policy")
+            print(mac_address, "Blacklisted")
+        elif allow_deny == "deny" and  group_match == "ALL":
+            print(mac_address, "in user group/s: ", user_groups, " does not match", zone, "policy")
+            print(mac_address, "Blacklisted")
             blacklist(mac_address)
         else:
-            print("unblacklist1: ")
+            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy")
+            print(mac_address, "UnBlacklisted")
             unblacklist(mac_address)
     else:
         print("default policy applied")
         zone_policy = policy.get_default()
         allow_deny = zone_policy.get("allow_deny")
         group_match = policy.match_default_groups(user_groups)
-
-        if allow_deny == "allow" and  group_match == False:
+        print(group_match)
+        if allow_deny == "allow" and  group_match == "NONE":
             print("default blacklist1:")
-        elif allow_deny == "deny" and  group_match == True:
+        elif allow_deny == "deny" and  group_match == "ALL":
             print("default blacklist2")
             blacklist(mac_address)
         else:
@@ -139,11 +155,10 @@ def cmxreceiver():
         area_json = request.get_json()
         zone = area_json.get("notifications")[0].get("locationMapHierarchy")
         mac_address = area_json.get("notifications")[0].get("deviceId")
-        in_out = area_json.get("notifications")[0].get("subscriptionName").split()[-1]
+        in_out = area_json.get("notifications")[0].get("boundary").replace("SIDE", "")
         print(mac_address, zone, in_out)
         mac_action(mac_address, zone, in_out)
         return "OK"
-
 
 
 @app.route('/config_update', methods =['GET', 'POST'])
@@ -173,7 +188,6 @@ def config_update():
             if 'zone' in key:
                 zone_numbers.append(key.strip('zone'))
 
-
         for element in zone_numbers:
             zone_name = request.form.get('zone' + element)
             policy_option = request.form.get('policy' + element)
@@ -200,4 +214,4 @@ if __name__ == "__main__" :
 
     print('\n********   Starting up Flask Web...    ********\n\n')
 
-    app.run(host='0.0.0.0', port=flask_port, debug=True)
+    app.run(host='0.0.0.0', port=flask_port, threaded=True, debug=True)
