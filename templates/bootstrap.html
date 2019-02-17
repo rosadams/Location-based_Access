@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Location Policy Update</title>
+
+    <style>
+
+
+
+
+    </style>
+</head>
+
+<body>
+
+    <form name = "bootstrap" action="{{ url_for('bootstrap')}}" method="post" >
+
+        <h1><img src="/static/cmx.png" height="42" width="42">   Location Policy: Update Server Configuration</h1>
+
+
+<!--
+{#
+
+
+#}
+-->
+
+        <div id="ise"><strong>ISE Server details:</strong><br>
+        Host:  <input type="text" name="ise_host" value="{{ vars['ise_server']['host'] }}"> <br>
+        Port:  <input type="text" name="ise_port" value="{{ vars['ise_server']['port'] }}"> <br>
+        Username:  <input type="text" name="ise_user" value="{{ vars['ise_server']['user'] }}"> <br>
+        Password:  <input type="password" name="ise_password" value="{{ vars['ise_server']['pass'] }}"> <br>
+        Server:  <input type="text" name="ise_server_name" value="{{ vars['ise_server']['server_name'] }}"> <br>
+        </div>
+        <br><br>
+
+        <div><strong>CMX Server details:</strong><br>
+        Host:  <input type="text" name="cmx_host" value="{{ vars['cmx_server']['host'] }}"> <br>
+        Port:  <input type="text" name="cmx_port" value="{{ vars['cmx_server']['port'] }}"> <br>
+        Username:  <input type="text" name="cmx_user" value="{{ vars['cmx_server']['user'] }}"> <br>
+        Password:  <input type="password" name="cmx_password" value="{{ vars['cmx_server']['pass'] }}"> <br>
+
+
+
+
+        {%- if token == 'yes' -%}
+         <br><br>
+            <div><strong>Enter Webex Bot Token:</strong><br>
+            Token:  <input type="password" name="bot_token">
+
+        {%- endif -%}
+
+
+        <br><br><br><br>
+        <input type="submit" value="Submit">
+        <input type="reset">
+
+    </form>
+
+<p>Click the "Submit" button to submit the query or "Reset" to set the form to default.</p>
+
+
+
+
+
+</body>
+</html>

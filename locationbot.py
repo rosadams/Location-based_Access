@@ -115,7 +115,7 @@ def change_zone_policy(policy, error):
     for group_index in range(len(groups_msg)):
         groups_msg[group_index]=groups_msg[group_index].strip()
 
-    changed_zones = {'zone_name' : zone, 'zone_policy' : {'allow_deny' : policy_msg, 'group_list' : groups_msg}}
+    changed_zones = [{'zone_name' : zone, 'allow_deny' : policy_msg, 'group_list' : groups_msg}]
 
     return message, changed_zones
 

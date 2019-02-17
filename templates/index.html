@@ -1,0 +1,91 @@
+
+<!--
+{#
+
+Sample web references:
+https://overiq.com/flask-101/basics-of-jinja-template-language/
+http://jinja.pocoo.org/docs/2.10/templates/#expressions
+https://www.webforefront.com/django/usebuiltinjinjafilters.html
+
+#}
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Location Policy Update</title>
+
+    <style>
+    option   {color: blue;}
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 90%;
+    }
+
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+
+    .notbold{
+        font-weight:normal
+    }​
+
+    </style>
+</head>
+
+<body>
+
+    <form name = "location"  >
+
+        <h1><img src="/static/cmx.png" height="42" width="42">   Location Policy Main Options Page</h1>
+
+
+        <div id="update">
+        <input type="submit" value="Update Policy" formaction="{{ url_for('config_update')}}" method="get">
+        <br><br>
+        </div>
+
+
+         <div id="ise">
+        <input type="submit" value="Test ISE Server" formaction="{{ url_for('servers_status', server='ise') }}" method="get">
+        <br><br>
+        </div>
+
+
+        <div id="cmx">
+        <input type="submit" value="Test CMX Server" formaction="{{ url_for('servers_status', server='cmx') }}" method="get">
+        <br><br>
+        </div>
+
+
+        <div id="bot">
+        <input type="submit" value="Test Bot" formaction="{{ url_for('servers_status', server='bot') }}" method="get">
+        <br><br>
+        </div>
+
+
+        <br><br><br><br>
+
+        <div id="config">
+        <input type="submit" value="Change Configuration" formaction="{{ url_for('bootstrap')}}" method="get">
+        <br><br>
+        </div>
+
+
+<!--
+{#
+        <p>This is default_policy policy{{ default_policy['policy'] }}</p>
+        <p>This is default_policy groups: {{ default_policy['groups'] }}</p>
+        <input type="submit" value="Reset" formaction="{{ url_for('config_update')}}" method="get">
+#}
+-->
+
+
+    </form>
+
+</body>
+</html>
