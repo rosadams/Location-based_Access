@@ -112,6 +112,16 @@ def mac_action(mac_address, zone, in_out):
             unblacklist(mac_address)
 
 
+def zone_action(changed_zones):
+    for n in changed_zones:
+        if n["zone_name"] != "default_policy":
+            for mac_addr in cmx_get_zonedevices(cmx_server, n["zone_name"]):
+                mac_action(mac_addr, n["zone_name"], "In")
+        else:
+            for mac_addr in cmx_get_nonzonedevices(cmx_server):
+                mac_action(mac_addr, n["zone_name"], "Out")
+    return
+
 
 def render_policy(saved_policy, ise_groups, policy_options, zone):
     # setup default browser display options
@@ -194,14 +204,7 @@ def config_update():
             changed_zones.append({'zone_name': zone_name, 'allow_deny': policy_option, 'group_list': group_list})
 
         policy.update(changed_zones)
-
-        for n in changed_zones:
-            if n["zone_name"] != "default_policy":
-                for mac_addr in cmx_get_zonedevices(cmx_server, n["zone_name"]):
-                    mac_action(mac_addr, n["zone_name"], "In")
-            else:
-                for mac_addr in cmx_get_nonzonedevices(cmx_server):
-                    mac_action(mac_addr, n["zone_name"], "Out")
+        zone_action(changed_zones)
 
         return render_template('changed_policy.html', changed_zones=changed_zones)
 
