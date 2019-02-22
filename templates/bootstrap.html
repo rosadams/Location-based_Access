@@ -48,7 +48,7 @@
         {%- if token == 'yes' -%}
          <br><br>
             <div><strong>Enter Webex Bot Token:</strong><br>
-            Token:  <input type="password" name="bot_token">
+            Token:  <input type="password" name="bot_token"  value="{{ vars['bot']['token'] }}">
 
         {%- endif -%}
 

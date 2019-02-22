@@ -30,28 +30,30 @@ try:
 except:
     pass
 
-    if WEBEX_BOT_TOKEN != 'None':
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": "Bearer " + WEBEX_BOT_TOKEN
-        }
+if WEBEX_BOT_TOKEN != 'None':
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": "Bearer " + WEBEX_BOT_TOKEN
+    }
 
-        WEBEX_URL = "https://api.ciscospark.com/v1"
+    WEBEX_URL = "https://api.ciscospark.com/v1"
 
-        bot_name, bot_email = check_bot(WEBEX_URL, headers)
+    bot_name, bot_email = check_bot(WEBEX_URL, headers)
 
-        webhook_name = 'location_query'
-        resources = ['messages', 'memberships']
-        event = 'created'
-        bot_route = '/bot'
-        webhook_vars = {'webhook_name': webhook_name, 'resources': resources, 'event': event, 'bot_route': bot_route}
+    webhook_name = 'location_query'
+    resources = ['messages', 'memberships']
+    event = 'created'
+    bot_route = '/bot'
+    webhook_vars = {'webhook_name': webhook_name, 'resources': resources, 'event': event, 'bot_route': bot_route}
 
-        print(WEBEX_BOT_TOKEN)
-        print(bot_name)
-        print(bot_email)
+    print(WEBEX_BOT_TOKEN)
+    print(bot_name)
+    print(bot_email)
 
-        check_webhook(WEBEX_URL, headers, webhook_vars)
+    check_webhook(WEBEX_URL, headers, webhook_vars)
+else:
+    print('Webex Bot is not configured. Pass bot token via environment or launch bootstrap route on webserver to configure and restart')
 
 
 ise_server = {
@@ -198,12 +200,8 @@ def render_policy(saved_policy, ise_groups, policy_options, zone):
     return  rendered_policy
 
 
-def ross_object_function_to_update_policy(changed_zones):
-    print(changed_zones)
-
-
-
 app = Flask(__name__)
+
 
 @app.route('/', methods = ['GET'])
 def index():
@@ -253,13 +251,6 @@ def bootstrap():
         else:
             display_token='yes'
 
-        print('in bootstrap route webex token:', WEBEX_BOT_TOKEN)
-        print('Configured State =', config['GENERAL']['configured_state'])
-        if config['GENERAL'].getboolean('configured_state'):
-            print('istrue')
-        else:
-            print('isfalse')
-
         return render_template("bootstrap.html", token=display_token, vars=bootstrap_vars)
 
     elif request.method == 'POST':
@@ -300,11 +291,8 @@ def bot():
 
     elif request.method == 'POST':
 
-        with open('localpolicy.bak') as json_file:
-            saved_policy = json.load(json_file)
-            #print(json.dumps(saved_policy, indent=4))
-
-        ise_groups = ['loc-testing', 'Nurses', 'Doctors', 'Employees', 'ALL_ACCOUNTS (default)', 'GuestType_SocialLogin (default)', 'Accounting', 'HR']
+        saved_policy = policy.get()
+        ise_groups = ise_get_usergroups(ise_server)
 
         webhook = request.get_json()
         print(webhook)
@@ -361,7 +349,7 @@ def bot():
                 print(json.dumps(changed_zones, indent=4))
 
                 policy.update(changed_zones)
-                ross_object_function_to_update_policy(changed_zones)
+                zone_action(changed_zones)
 
             else:
                 msg = "Sorry, but I did not understand your request. Type `Help` to see what I can do"
