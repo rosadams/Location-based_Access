@@ -96,8 +96,6 @@ class Location_Policy:
         for n in self.data.get("zone_policies"):
             if n.get("zone_name") == zone:
                 policyset = set(n.get("zone_policy").get("group_list"))
-        #print(groupset)
-        #print(groupset.intersection(policyset))
         if groupset.intersection(policyset) == set():
             return "NONE"
         elif groupset.intersection(policyset) == groupset:
@@ -107,8 +105,10 @@ class Location_Policy:
 
 
     def match_default_groups(self, grouplist):
-        # Returns True if any groups in grouplist match any groups in location_policy grouplist for for the default policy.  False
-        # if no matches.
+        # Compares list of user groups to groups listed in the default location policy. returns string.
+        # Returns ALL if all input groups are included in the location policy for that zone
+        #         ANY if any input group is included in the location policy
+        #         NONE if there are no matches at all.
         groupset = set(grouplist)
         policyset = set(self.data.get("default_policy").get("group_list"))
         if groupset.intersection(policyset) == set():
