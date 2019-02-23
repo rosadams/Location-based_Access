@@ -1,4 +1,5 @@
 import requests
+import json
 import xmltodict
 import time
 from requests.adapters import HTTPAdapter
@@ -8,27 +9,6 @@ import json
 # suppress security warning messages due to having verify=false in requests
 requests.packages.urllib3.disable_warnings()
 
-
-def requests_retry_session(
-    # Retry for REST requests that return error codes.   Needed to address lag in ISE session database after Issuing a CoA.
-    # Code borrowed from https://www.peterbe.com/plog/best-practice-with-retries-with-requests
-    retries=5,
-    backoff_factor=10,
-    status_forcelist=(500, 502, 504),
-    session=None,
-):
-    session = session or requests.Session()
-    retry = Retry(
-        total=retries,
-        read=retries,
-        connect=retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    return session
 
 def ise_get_usergroups(server):
     # returns a sorted list of all usergroups configured in ISE
@@ -111,7 +91,7 @@ def ise_get_endpoint_info(server, mac_address):
     """returns a dictionary containing the mac, staticGroupAssignment, and groupId of the endpoint, given mac address/name
        (str) of that device.
     """
-    call = "/ers/config/endpoint/name/" + mac_address.upper()
+    call = "/ers/config/endpoint/name/" + mac_address
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
@@ -122,39 +102,28 @@ def ise_get_endpoint_info(server, mac_address):
                      }
     return endpoint_info
 
-"""
+
 def ise_get_device_usergroup(server, mac_address):
     # returns a a list of the user groups associated with a device session.
-    call = "/admin/API/mnt/Session/MACAddress/" + mac_address.upper()
+    call = "/admin/API/mnt/Session/MACAddress/" + mac_address
     uri = ("https://" + server["host"] + call)
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-    print(response)
     if str(response) == "<Response [200]>":
         data = xmltodict.parse(response.text)
+        #print(data["sessionParameters"]["Name"])
+
+        #print(data["sessionParameters"])
+        #print(data["sessionParameters"]["passed"])
+        #print(data["sessionParameters"]["failed"])
         att_list = data["sessionParameters"]['other_attr_string'].split(":!:")
-        print(att_list)
-        return [n.split(":")[-1] for n in att_list if "Name=User Identity Groups:" in n]
+        for n in att_list:
+            print(n)
+
+       # return data["sessionParameters"]["selected_azn_profiles"].split(",")
+        return
     else:
         return []
-"""
-
-def ise_get_device_user_info(server, mac_address):
-    # returns a dictionary with username and the user groups associated with a device session.
-    call = "/admin/API/mnt/Session/MACAddress/" + mac_address.upper()
-    uri = ("https://" + server["host"] + call)
-    headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
-    response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-    if str(response) == "<Response [200]>":
-        dev_usr_info = {}
-        data = xmltodict.parse(response.text)
-        dev_usr_info["user_name"] = data["sessionParameters"]["user_name"]
-        att_list = data["sessionParameters"]['other_attr_string'].split(":!:")
-        dev_usr_info["user_groups"] = [n.split(":")[-1] for n in att_list if "Name=User Identity Groups:" in n]
-        return(dev_usr_info)
-
-    else:
-        return {"user_name": "not in ISE", "user_groups":[]}
 
 
 def ise_blacklist_mac(server, mac_address):
@@ -183,7 +152,8 @@ def ise_unblacklist_mac(server, mac_info):
     """ unblacklists mac_address and resets staticGroupAssignment and groupId to their original values
         (stored in mac_info dictionary).
     """
-    call = "/ers/config/endpoint/" + mac_info.get("id").upper()
+    print(mac_info)
+    call = "/ers/config/endpoint/" + mac_info.get("id")
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
@@ -202,10 +172,49 @@ def ise_unblacklist_mac(server, mac_info):
 
 def ise_CoA(server, mac_address):
     # Issues a CoA for the given mac_address
-    #call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/1"
-    call = "/admin/API/mnt/CoA/Disconnect/" + server.get("server_name") + "/" + mac_address.upper() + "/1"
+    print("It's fun to stay at the CoA")
+    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/1"
     uri = ("https://" + server["host"] + call)
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-    print(response.text)
-    return response
+    print(response)
+    return
+
+
+def main():
+    ise_server = {
+        "host": "Satlab-dna-ise.cisco.com",
+        "server_name": "satlab-dna-ise",
+        "port": "9060",
+        "user": "3sbananas",
+        "pass": "C1scodna"
+    }
+
+    # Output Examples
+    #print (ise_get_groupID_from_mac(ise_server, "00:0C:29:1F:2B:C0"))
+    #print(ise_blacklist_mac(ise_server, " 00:0C:29:00:00:01"))
+    #print(ise_unblacklist_mac(ise_server, " 00:0C:29:00:00:01"))
+    #print(ise_get_endpoint_info(ise_server, " 00:0C:29:00:00:01"))
+    #print(ise_get_usergroupid(ise_server, "Blacklist"))
+    #print(ise_get_usergroups(ise_server))
+    #print(ise_get_device_usergroup(ise_server, "00:0C:29:1F:2B:C0"))
+
+    print(ise_get_device_usergroup(ise_server, "D0:2B:20:CA:AB:77"))
+    #print(ise_get_endpoint_info(ise_server, "D0:2B:20:CA:AB:77"))
+
+
+"""
+#Test Blacklist and Unblacklist
+    mac_info = ise_get_endpoint_info(ise_server, "00:0C:29:1F:2B:C0")
+    print(mac_info)
+    print("\n\n\n*****Blacklisting server**** \n ")
+    ise_blacklist_mac(ise_server, "00:0C:29:1F:2B:C0")
+    print(ise_get_endpoint_info(ise_server, "00:0C:29:1F:2B:C0"))
+    print("\n\n\n*****UN-Blacklisting server**** \n ")
+    ise_unblacklist_mac(ise_server, mac_info)
+    print(ise_get_endpoint_info(ise_server, "00:0C:29:1F:2B:C0"))
+    
+"""
+
+if __name__ == "__main__":
+    main()
