@@ -65,7 +65,7 @@ ise_server = {
     }
 
 cmx_server = {
-    "host": "10.88.93.188",
+    "host": "10.88.66.116",
     "server_name": "",
     "port": "",
     "user": "admin",
@@ -116,50 +116,66 @@ def unblacklist(mac_address):
         print("unblasklisted ", mac_address)
 
 
-def mac_action(mac_address, zone, in_out):
-    user_groups = ise_get_device_usergroup(ise_server, mac_address)
-    user_groups.append("ALL_ACCOUNTS (default)")
-
+def mac_action(mac_address, username, zone, in_out):
+    print(mac_address, username, zone, in_out)
+    user_groups = ise_get_userinfo(ise_server, username).get("usergroup_names")
 
     if in_out == "In":
         if policy.zone_exists(zone) is False:
             zone_policy = policy.get_default()
             allow_deny = zone_policy.get("allow_deny")
+            allow_deny_all = policy.match_default_groups(["ALL_ACCOUNTS (default)"])
             group_match = policy.match_default_groups(user_groups)
-            #*** CMX call to get all zones & update policy
-            print("zone ", zone, "does not exist")
+            # *** CMX call to get all zones & update policy
+            print("zone ", zone, "does not exist in policy")
         else:
             zone_policy = policy.get_for_zone(zone)
             allow_deny = zone_policy.get("allow_deny")
+            allow_deny_all = policy.match_zone_groups(zone, ["ALL_ACCOUNTS (default)"])
             group_match = policy.match_zone_groups(zone, user_groups)
-        if group_match:
-            print(mac_address, "in user group/s ___", ", matched zone policy: ", allow_deny, user_groups)
-        else:
-            print(mac_address, "in user group/s ___", ", did not match zone policy: ", allow_deny, user_groups)
 
-
-        if allow_deny == "allow" and  group_match is False:
-            print("blacklist:" + mac_address)
-        elif allow_deny == "deny" and  group_match is True:
-            print("blacklist")
+        if allow_deny == "allow" and allow_deny_all == "ALL":
+            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Allow ALL")
+            print(mac_address, "UnBlacklisted")
+            unblacklist(mac_address)
+        elif allow_deny == "deny" and allow_deny_all == "ALL":
+            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Deny ALL")
+            print(mac_address, "Blacklisted")
             blacklist(mac_address)
         else:
-            print("unblacklist1: ")
-            unblacklist(mac_address)
+            if (allow_deny == "allow" and group_match == "NONE") or (allow_deny == "deny" and group_match == "ALL"):
+                print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Deny ALL")
+                print(mac_address, "Blacklisted")
+                blacklist(mac_address)
+            else:
+                print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy", allow_deny)
+                print(mac_address, "UnBlacklisted")
+                unblacklist(mac_address)
     else:
         print("default policy applied")
         zone_policy = policy.get_default()
         allow_deny = zone_policy.get("allow_deny")
+        allow_deny_all = policy.match_default_groups(["ALL_ACCOUNTS (default)"])
         group_match = policy.match_default_groups(user_groups)
 
-        if allow_deny == "allow" and  group_match == False:
-            print("default blacklist1:")
-        elif allow_deny == "deny" and  group_match == True:
-            print("default blacklist2")
+        if allow_deny == "allow" and allow_deny_all == "ALL":
+            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "Default Policy - Allow ALL")
+            print(mac_address, "UnBlacklisted")
+            unblacklist(mac_address)
+        elif allow_deny == "deny" and allow_deny_all == "ALL":
+            print(mac_address, "in user group/s: ", user_groups, " matches", zone, "Default Policy - Deny ALL")
+            print(mac_address, "Blacklisted")
             blacklist(mac_address)
         else:
-            print("default unblacklist1: ")
-            unblacklist(mac_address)
+            if (allow_deny == "allow" and group_match == "NONE") or (allow_deny == "deny" and group_match == "ALL"):
+                print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Deny ALL")
+                print(mac_address, "Blacklisted")
+                # blacklist(mac_address)
+            else:
+                print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy", allow_deny)
+                print(mac_address, "UnBlacklisted")
+                unblacklist(mac_address)
+
 
 
 def zone_action(changed_zones):
@@ -367,9 +383,9 @@ def cmxreceiver():
         area_json = request.get_json()
         zone = area_json.get("notifications")[0].get("locationMapHierarchy")
         mac_address = area_json.get("notifications")[0].get("deviceId")
-        in_out = area_json.get("notifications")[0].get("subscriptionName").split()[-1]
-        print(mac_address, zone, in_out)
-        mac_action(mac_address, zone, in_out)
+        username = area_json.get("notifications")[0].get("username")
+        in_out = area_json.get("notifications")[0].get("boundary").replace("SIDE", "")
+        mac_action(mac_address, username, zone, in_out)
         return "OK"
 
 
