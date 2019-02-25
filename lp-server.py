@@ -3,12 +3,16 @@ import json
 import requests
 import base64
 import configparser
+import logging
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 from Location_Policy import Location_Policy
 from ISE_API import *
 from CMX_API import *
 from locationbot import get_zones, get_groups, display_zone_policy, change_zone_policy, help, hello
 from webexbot import send_spark_get, send_spark_post, send_spark_delete, check_bot, check_webhook
+
+flasklog = logging.getLogger('werkzeug')
+flasklog.disabled = True
 
 bot_name = ''
 WEBEX_BOT_TOKEN = 'None'
@@ -120,7 +124,7 @@ def mac_action(mac_address, username, zone, in_out):
     print(mac_address, username, zone, in_out)
     user_groups = ise_get_userinfo(ise_server, username).get("usergroup_names")
 
-    if in_out == "In":
+    if in_out == "IN":
         if policy.zone_exists(zone) is False:
             zone_policy = policy.get_default()
             allow_deny = zone_policy.get("allow_deny")
@@ -130,10 +134,12 @@ def mac_action(mac_address, username, zone, in_out):
             print("zone ", zone, "does not exist in policy")
         else:
             zone_policy = policy.get_for_zone(zone)
+            print(json.dumps(zone_policy, indent = 4))
             allow_deny = zone_policy.get("allow_deny")
             allow_deny_all = policy.match_zone_groups(zone, ["ALL_ACCOUNTS (default)"])
             group_match = policy.match_zone_groups(zone, user_groups)
-
+            print("zone policy allow_deny = ", allow_deny )
+            print("allow_deny_all =", allow_deny_all )
         if allow_deny == "allow" and allow_deny_all == "ALL":
             print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Allow ALL")
             print(mac_address, "UnBlacklisted")
@@ -158,6 +164,9 @@ def mac_action(mac_address, username, zone, in_out):
         allow_deny_all = policy.match_default_groups(["ALL_ACCOUNTS (default)"])
         group_match = policy.match_default_groups(user_groups)
 
+        print("allow_deny = ", allow_deny)
+        print("allow_deny all = ", allow_deny_all)
+
         if allow_deny == "allow" and allow_deny_all == "ALL":
             print(mac_address, "in user group/s: ", user_groups, " matches", zone, "Default Policy - Allow ALL")
             print(mac_address, "UnBlacklisted")
@@ -170,7 +179,7 @@ def mac_action(mac_address, username, zone, in_out):
             if (allow_deny == "allow" and group_match == "NONE") or (allow_deny == "deny" and group_match == "ALL"):
                 print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy - Deny ALL")
                 print(mac_address, "Blacklisted")
-                # blacklist(mac_address)
+                blacklist(mac_address)
             else:
                 print(mac_address, "in user group/s: ", user_groups, " matches", zone, "policy", allow_deny)
                 print(mac_address, "UnBlacklisted")
@@ -181,11 +190,11 @@ def mac_action(mac_address, username, zone, in_out):
 def zone_action(changed_zones):
     for n in changed_zones:
         if n["zone_name"] != "default_policy":
-            for mac_addr in cmx_get_zonedevices(cmx_server, n["zone_name"]):
-                mac_action(mac_addr, n["zone_name"], "In")
+            for dev in cmx_get_zonedevices(cmx_server, n["zone_name"]):
+                mac_action(dev.get("mac_address"), dev.get("username"), n["zone_name"], "In")
         else:
-            for mac_addr in cmx_get_nonzonedevices(cmx_server):
-                mac_action(mac_addr, n["zone_name"], "Out")
+            for dev in cmx_get_nonzonedevices(cmx_server):
+                mac_action(dev.get("mac_address"), dev.get("username"), n["zone_name"], "Out")
     return
 
 
@@ -224,6 +233,44 @@ def index():
 
         return render_template("index.html")
 
+@app.route('/test', methods =['GET', 'POST'])
+def test():
+
+    global policy
+    if request.method == 'GET':
+        saved_policy = policy.get()
+        ise_groups = ise_get_usergroups(ise_server)
+        policy_options = ['Allow', 'Deny']
+
+        default_policy = render_policy(saved_policy['default_policy'], ise_groups, policy_options, 'default_policy')
+
+        zones = {}
+        list_value = 0
+        for zone in saved_policy['zone_policies']:
+            submit_policy = saved_policy['zone_policies'][list_value]['zone_policy']
+            zones[zone['zone_name']] = render_policy(submit_policy, ise_groups, policy_options, zone['zone_name'])
+            list_value = list_value + 1
+
+        return render_template("form_submitv2.html", zones=zones, default_policy=default_policy)
+
+    else:
+        changed_zones = []
+        zone_numbers = []
+
+        for key, value in request.form.items():
+            if 'zone' in key:
+                zone_numbers.append(key.strip('zone'))
+
+
+        for element in zone_numbers:
+            zone_name = request.form.get('zone' + element)
+            policy_option = request.form.get('policy' + element)
+            group_list = request.form.getlist('group' + element)
+            changed_zones.append({'zone_name': zone_name, 'allow_deny': policy_option, 'group_list': group_list})
+
+        policy.update(changed_zones)
+        zone_action(changed_zones)
+        return render_template('changed_policy.html', changed_zones=changed_zones)
 
 @app.route('/bootstrap', methods =['GET', 'POST'])
 def bootstrap():
@@ -561,4 +608,4 @@ if __name__ == "__main__" :
 
     print('\n********   Starting up Flask Web...    ********\n\n')
 
-    app.run(host='0.0.0.0', port=flask_port, debug=True)
+    app.run(host='0.0.0.0', port=flask_port, debug=False)

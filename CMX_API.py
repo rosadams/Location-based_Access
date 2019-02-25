@@ -52,13 +52,13 @@ def cmx_register_zone(server, zonelist):
 
 
 def cmx_get_zonedevices(server, zone):
-    # returns a list of mac_addresses for  all associated devices in a given zone
+    # returns a list of {mac_addresses, usernames}  for  all associated devices in a given zone
     call = "/api/location/v2/clients?mapHierarchy=" + (zone.rsplit("/", 1)[0])
     uri = ("https://" + server["host"]+ call + zone)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
 
-    assoc_dev = [n.get("macAddress")
+    assoc_dev = [{"mac_address": n.get("macAddress"), "username": n.get("userName")}
                  for n in response.json()
                  if n.get("mapInfo").get("mapHierarchyString") == zone
                  and n.get("dot11Status") == "ASSOCIATED"
@@ -67,13 +67,13 @@ def cmx_get_zonedevices(server, zone):
 
 
 def cmx_get_nonzonedevices(server):
-    # returns a list of mac_addresses for  all associated devices in a given zone
+    # returns a list of {mac_addresses, usernames} for  all associated devices in a given zone
     call = "/api/location/v2/clients?mapHierarchy="
     uri = ("https://" + server["host"]+ call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
     zones = [n.get("hierarchy") for n in cmx_get_zones(server)]
-    assoc_dev = [n.get("macAddress")
+    assoc_dev = [{"mac_address": n.get("macAddress"), "username": n.get("userName")}
                  for n in response.json()
                  if n.get("mapInfo").get("mapHierarchyString") not in zones
                  and n.get("dot11Status") == "ASSOCIATED"
