@@ -22,10 +22,10 @@ def check_webhook(WEBEX_URL, headers, webhook_vars):
             target_url = urls['public_url']
             address = urls['config']['addr']
             print('Ngrok target_url is:', target_url)
-            print('Ngrok address is:', address)
+            #print('Ngrok address is:', address)
 
     webhook_js = send_spark_get(url, headers,js=True)
-    print('webhook_js initial check is: ', webhook_js)
+    print('webhook_js established at: ', webhook_js)
 
     items = webhook_js['items']
 
@@ -41,7 +41,7 @@ def check_webhook(WEBEX_URL, headers, webhook_vars):
     for webhook in resources :
         payload = {'name': webhook_name, 'targetUrl': target_url + bot_route, 'resource' : webhook, 'event' : event}
         webhook_js = send_spark_post(url, headers, data=payload, js=True)
-        print(webhook_js)
+        #print(webhook_js)
 
     return
 
