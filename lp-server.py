@@ -12,7 +12,7 @@ from locationbot import get_zones, get_groups, display_zone_policy, change_zone_
 from webexbot import send_spark_get, send_spark_post, send_spark_delete, check_bot, check_webhook
 
 flasklog = logging.getLogger('werkzeug')
-flasklog.disabled = True
+#flasklog.disabled = True
 
 bot_name = ''
 WEBEX_BOT_TOKEN = 'None'
@@ -104,7 +104,7 @@ def blacklist(mac_address):
         print(ise_get_endpoint_info(ise_server, mac_address))
         policy.blacklist(ise_get_endpoint_info(ise_server, mac_address))
         ise_blacklist_mac(ise_server, mac_address)
-        ise_CoA(ise_server, mac_address)
+        #ise_CoA(ise_server, mac_address)
         print("blacklisting ", mac_address)
 
 
@@ -114,13 +114,13 @@ def unblacklist(mac_address):
     if policy.in_blacklist(mac_address) is not None:
         print("mac_address is already blacklisted in local policy")
         ise_unblacklist_mac(ise_server, policy.in_blacklist(mac_address))
-        ise_CoA(ise_server, mac_address)
+        #ise_CoA(ise_server, mac_address)
         policy.unblacklist(mac_address)
         print("unblasklisted ", mac_address)
 
 
 def mac_action(mac_address, username, zone, in_out):
-    print(mac_address, username, zone, in_out)
+    print("******", mac_address, username, zone, in_out)
     user_groups = ise_get_userinfo(ise_server, username).get("usergroup_names")
 
     if in_out == "IN":
@@ -133,7 +133,6 @@ def mac_action(mac_address, username, zone, in_out):
             print("zone ", zone, "does not exist in policy")
         else:
             zone_policy = policy.get_for_zone(zone)
-            print(json.dumps(zone_policy, indent = 4))
             allow_deny = zone_policy.get("allow_deny")
             allow_deny_all = policy.match_zone_groups(zone, ["ALL_ACCOUNTS (default)"])
             group_match = policy.match_zone_groups(zone, user_groups)
@@ -375,6 +374,7 @@ def bot():
             message = result['text']
             message = message.replace(bot_name, '').strip()
             message = message.split()
+            print(message)
             message[0] = message[0].lower()
             message = ' '.join(message)
             #print('Parsed request=', message)
@@ -403,8 +403,11 @@ def bot():
                     sorted_zone_dict, sorted_group_dict = indexed_mapping(saved_policy, ise_groups)
 
                     msg = '**_Select Zone number from list below:_**<br/>'
+                    zone_length = 0
                     for index, value in sorted_zone_dict.items():
                         msg += index + '.  ' + value + '<br/>'
+                        zone_length = zone_length + 1
+                    #msg += str(zone_length + 1) + '.  Default Zone'
 
                     msg += '<br/>'
                     msg += '**_Select Groups (comma separated) from list below:_**<br/>'
@@ -439,14 +442,14 @@ def bot():
                     else:
                         pass
 
-                #print(json.dumps(changed_zones, indent=4))
+                print(json.dumps(changed_zones, indent=4))
 
                 policy.update(changed_zones)
                 zone_action(changed_zones)
 
             else:
                 msg = "Sorry, but I did not understand your request. Type `Help` to see what I can do"
-
+            print("Message: ", msg)
             if msg != None:
                 send_spark_post("https://api.ciscospark.com/v1/messages", headers,
                                 {"roomId": webhook['data']['roomId'], "markdown": msg})

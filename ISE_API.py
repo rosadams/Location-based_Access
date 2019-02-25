@@ -61,8 +61,6 @@ def ise_get_userinfo(server, user_name):
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-    print(response)
-    print(json.dumps(response.json(), indent = 4))
     user_id = response.json().get("SearchResult").get("resources")[0].get("id")
     # Get usergroup_ids
     uri = response.json().get("SearchResult").get("resources")[0].get("link").get("href")
@@ -175,7 +173,7 @@ def ise_unblacklist_mac(server, mac_info):
 def ise_CoA(server, mac_address):
     # Issues a CoA for the given mac_address
     print("It's fun to stay at the CoA")
-    call = "/admin/API/mnt/CoA/Disconnect/" + server.get("server_name") + "/" + mac_address.upper() + "/0"
+    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/2"
     uri = ("https://" + server["host"] + call)
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)

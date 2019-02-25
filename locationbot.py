@@ -23,6 +23,7 @@ def get_zones(saved_policy):
     message = '**The following Zones are defined:**<br/>'
     for zone in saved_policy['zone_policies']:
         message += (zone['zone_name'] + '<br/>')
+    message += 'Default Zone'
 
     return message
 
@@ -128,8 +129,13 @@ def indexed_mapping(saved_policy, ise_groups):
         zone_list.append(zone['zone_name'])
 
     zone_list = sorted(zone_list, key=str.lower)
+
+    zone_length = 0
     for n, zone_name in enumerate(zone_list, start=1):
         sorted_zone_dict[str(n)] = zone_name
+        zone_length = zone_length + 1
+
+    sorted_zone_dict[str(zone_length + 1)] = 'Default Zone'
 
     ise_groups = sorted(ise_groups, key=str.lower)
     for n, group_name in enumerate(ise_groups, start=1):
