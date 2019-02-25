@@ -48,7 +48,7 @@ def display_zone_policy(saved_policy, search_zone):
 def change_zone_policy(policy, error):
 
     if error!='':
-        return error
+        return error, []
 
 
     '''
@@ -96,7 +96,7 @@ def change_zone_policy(policy, error):
 
     regex_alternate = r"\s*([\w>\s]+[\w])\s+(policy\s*=\s*[allowdenyAD]+)\s+(groups\s*=\s*[\w\s\(\),]+)"
 
-    regex = r"\s*([a-zA-Z0-9>\s]*[a-zA-Z0-9])\s*(policy\s*=\s*[allowdenyAD]*)\s*(groups\s*=\s*[a-zA-Z_\s\(\),-]*)"
+    regex = r"\s*([a-zA-Z0-9>\s]*[a-zA-Z0-9])[\s,]*(policy\s*=\s*[allowdenyAD]*)[\s,]*(groups\s*=\s*[a-zA-Z_\s\(\),\d-]*)"
     print(policy)
     policy_split = re.search(regex, policy)
     zone = policy_split.group(1)
@@ -119,3 +119,20 @@ def change_zone_policy(policy, error):
 
     return message, changed_zones
 
+def indexed_mapping(saved_policy, ise_groups):
+    zone_list = []
+    sorted_zone_dict = {}
+    sorted_group_dict = {}
+
+    for zone in saved_policy['zone_policies']:
+        zone_list.append(zone['zone_name'])
+
+    zone_list = sorted(zone_list, key=str.lower)
+    for n, zone_name in enumerate(zone_list, start=1):
+        sorted_zone_dict[str(n)] = zone_name
+
+    ise_groups = sorted(ise_groups, key=str.lower)
+    for n, group_name in enumerate(ise_groups, start=1):
+        sorted_group_dict[str(n)] = group_name
+
+    return sorted_zone_dict, sorted_group_dict

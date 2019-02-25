@@ -7,7 +7,7 @@ from flask import Flask, flash, redirect, render_template, request, session, abo
 from Location_Policy import Location_Policy
 from ISE_API import *
 from CMX_API import *
-from locationbot import get_zones, get_groups, display_zone_policy, change_zone_policy, help, hello
+from locationbot import get_zones, get_groups, display_zone_policy, change_zone_policy, help, hello, indexed_mapping
 from webexbot import send_spark_get, send_spark_post, send_spark_delete, check_bot, check_webhook
 
 bot_name = ''
@@ -47,7 +47,6 @@ if WEBEX_BOT_TOKEN != 'None':
     bot_route = '/bot'
     webhook_vars = {'webhook_name': webhook_name, 'resources': resources, 'event': event, 'bot_route': bot_route}
 
-    print(WEBEX_BOT_TOKEN)
     print(bot_name)
     print(bot_email)
 
@@ -65,7 +64,7 @@ ise_server = {
     }
 
 cmx_server = {
-    "host": "10.88.93.188",
+    "host": "10.88.66.116",
     "server_name": "",
     "port": "",
     "user": "admin",
@@ -78,8 +77,8 @@ try:
     if config['GENERAL'].getboolean('configured_state'):
         ise_server = dict(config.items('ISE'))
         cmx_server = dict(config.items('CMX'))
-        print(ise_server)
-        print(cmx_server)
+        #print(ise_server)
+        #print(cmx_server)
         print('Run Ross policy = Location_Policy(bkup_file, cmx_server)')
     else:
         print('Server not configured. Launch bootstrap route on webserver to configure and restart')
@@ -234,7 +233,6 @@ def bootstrap():
 
 
             with open(config_file_path, 'w') as config_file:
-                # config_file = open('./startup.ini', 'w')
                 config.write(config_file)
 
         config.read(config_file_path)
@@ -242,9 +240,7 @@ def bootstrap():
         ise_server = dict(config.items('ISE'))
         cmx_server = dict(config.items('CMX'))
         bot_var = dict(config.items('BOT'))
-
         bootstrap_vars = {'ise_server': ise_server, 'cmx_server': cmx_server, 'bot': bot_var}
-        print(bootstrap_vars)
 
         if 'WEBEX_BOT_TOKEN' in os.environ:
             display_token='no'
@@ -254,8 +250,6 @@ def bootstrap():
         return render_template("bootstrap.html", token=display_token, vars=bootstrap_vars)
 
     elif request.method == 'POST':
-
-        print(request.form)
         config.read(config_file_path)
         config.set('ISE', 'host', request.form.get('ise_host'))
         config.set('ISE', 'port', request.form.get('ise_port'))
@@ -293,16 +287,13 @@ def bot():
 
         saved_policy = policy.get()
         ise_groups = ise_get_usergroups(ise_server)
-
         webhook = request.get_json()
-        print(webhook)
-
         resource = webhook['resource']
         senders_email = webhook['data']['personEmail']
         room_id = webhook['data']['roomId']
 
         if resource == "memberships" and senders_email == bot_email:
-            print('webhook is: ', webhook)
+            #print('webhook is: ', webhook)
             send_spark_post("https://api.ciscospark.com/v1/messages",
                             {
                                 "roomId": room_id,
@@ -313,17 +304,17 @@ def bot():
                             )
 
         if ("@webex.bot" not in webhook['data']['personEmail']):
-            print('Requester email= ', webhook['data']['personEmail'])
-            print('msgID= ', webhook['data']['id'])
+            #print('Requester email= ', webhook['data']['personEmail'])
+            #print('msgID= ', webhook['data']['id'])
             result = send_spark_get(
                 'https://api.ciscospark.com/v1/messages/{}'.format(webhook['data']['id']), headers)
-            print('Raw request=', result['text'])
+            #print('Raw request=', result['text'])
             message = result['text']
             message = message.replace(bot_name, '').strip()
             message = message.split()
             message[0] = message[0].lower()
             message = ' '.join(message)
-            print('Parsed request=', message)
+            #print('Parsed request=', message)
             if message.startswith('help'):
                 msg = help()
             elif message.startswith('hello'):
@@ -344,9 +335,48 @@ def bot():
                 elif not ' groups' in zone_policy:
                     error = 'Confirm Change policy request is using the correct syntax:<br/>'
                     error += ('change [zone_name] policy=[policy] groups=([groups])')
+
+                if zone_policy == '':
+                    sorted_zone_dict, sorted_group_dict = indexed_mapping(saved_policy, ise_groups)
+
+                    msg = '**_Select Zone number from list below:_**<br/>'
+                    for index, value in sorted_zone_dict.items():
+                        msg += index + '.  ' + value + '<br/>'
+
+                    msg += '<br/>'
+                    msg += '**_Select Groups (comma separated) from list below:_**<br/>'
+
+                    for index, value in sorted_group_dict.items():
+                        msg += index + '.  ' + value + '<br/>'
+
+                    msg += '<br/>'
+                    msg += 'Syntax: **change [zone_number] policy=[allow | deny ] groups=[group_1, group_2, group_n]**<br/>'
+
+                    send_spark_post("https://api.ciscospark.com/v1/messages", headers,
+                                    {"roomId": webhook['data']['roomId'], "markdown": msg})
+
+                    return "true"
+
                 msg, changed_zones = change_zone_policy(zone_policy, error)
 
-                print(json.dumps(changed_zones, indent=4))
+                if len(changed_zones) > 0:
+                    if changed_zones[0]['zone_name'].isdigit():
+                        sorted_zone_dict, sorted_group_dict = indexed_mapping(saved_policy, ise_groups)
+                        groups_list = changed_zones[0]['group_list']
+                        temp_list = []
+                        for group_index, group in enumerate(groups_list):
+                            temp_list.append(sorted_group_dict[group].strip())
+
+                        groups_msg = ', '.join(temp_list)
+                        zone_policy = sorted_zone_dict[changed_zones[0]['zone_name']] + ' policy='
+                        zone_policy = zone_policy +  changed_zones[0]['allow_deny']
+                        zone_policy = zone_policy + ' groups=' + groups_msg
+                        msg, changed_zones = change_zone_policy(zone_policy, error)
+
+                    else:
+                        pass
+
+                #print(json.dumps(changed_zones, indent=4))
 
                 policy.update(changed_zones)
                 zone_action(changed_zones)
