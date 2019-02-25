@@ -1,7 +1,10 @@
 import requests
 import json
 import xmltodict
-from requests.auth import HTTPBasicAuth
+import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import json
 
 # suppress security warning messages due to having verify=false in requests
 requests.packages.urllib3.disable_warnings()
@@ -17,6 +20,61 @@ def ise_get_usergroups(server):
     for n in (response.json().get("SearchResult").get("resources")):
         grouplist.append(n.get("name"))
     return (sorted(grouplist))
+
+
+def ise_get_device_usergroup(server, mac_address):
+    # returns a a list of the user groups associated with a device session.
+    call = "/admin/API/mnt/Session/MACAddress/" + mac_address.upper()
+    uri = ("https://" + server["host"] + call)
+    headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
+    #response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+    t0 = time.time()
+    try:
+        response = requests_retry_session().get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+    except Exception as x:
+        print('It failed :(', x.__class__.__name__)
+    #else:
+    #    print('It eventually worked', response.status_code)
+    finally:
+        t1 = time.time()
+        #print('Took', t1 - t0, 'seconds')
+
+    if str(response) == "<Response [200]>":
+        data = xmltodict.parse(response.text)
+        att_list = data["sessionParameters"]['other_attr_string'].split(":!:")
+        return [n.split(":")[-1] for n in att_list if "Name=User Identity Groups:" in n]
+    elif str(response) == "<Response [500]>":
+        return []
+
+
+def ise_get_userinfo(server, user_name):
+    #returns a dictionary with information for a given username. Schema:
+    # {
+    #     "user_name": "",
+    #     "id": "",
+    #     "usergroup_ids": [],
+    #     "usergroup_names": []
+    # }
+
+    #get user_id
+    call = "/ers/config/internaluser?filter=name.eq." + user_name
+    uri = ("https://" + server["host"] + ":" + server["port"] + call)
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+    user_id = response.json().get("SearchResult").get("resources")[0].get("id")
+    # Get usergroup_ids
+    uri = response.json().get("SearchResult").get("resources")[0].get("link").get("href")
+    response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+    usergroup_ids = response.json().get("InternalUser").get("identityGroups").split(",")
+    #Get usergroup_names
+    usergroup_names = []
+    for n in usergroup_ids:
+        call = "/ers/config/identitygroup/" + n
+        uri = ("https://" + server["host"] + ":" + server["port"] + call)
+        response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
+        usergroup_names.append(response.json().get("IdentityGroup").get("name"))
+    user_info = {"user_name": user_name, "id": user_id, "usergroup_ids": usergroup_ids, "usergroup_names": usergroup_names}
+    return user_info
 
 
 def ise_get_usergroupid(server, groupname):
