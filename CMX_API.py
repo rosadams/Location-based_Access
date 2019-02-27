@@ -57,7 +57,6 @@ def cmx_get_zonedevices(server, zone):
     uri = ("https://" + server["host"]+ call + zone)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
-
     assoc_dev = [{"mac_address": n.get("macAddress"), "username": n.get("userName")}
                  for n in response.json()
                  if n.get("mapInfo").get("mapHierarchyString") == zone
@@ -83,7 +82,7 @@ def cmx_get_nonzonedevices(server):
 
 def main():
     cmx_server = {
-        "host": "10.88.66.124",
+        "host": "10.88.66.116",
         "server_name": "",
         "port": "",
         "user": "admin",

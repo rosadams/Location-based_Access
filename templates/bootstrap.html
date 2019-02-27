@@ -1,69 +1,150 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Location Policy Update</title>
+    <head>
+        <meta charset="utf-8">
+        <meta name="locale" content="US">
+        <meta name="language" content="en">
+        <meta name="country" content="US">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Location Policy Manager</title>
+        <link rel="stylesheet" href="/static/css/cui-standard.min.css">      
+        <link rel="icon" type="image/vnd.microsoft.icon" href="//www.cisco.com/favicon.ico">
+        <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="///www.cisco.com/favicon.ico">
+      
+       
+        <style>
+        table {
+                height:550px; 
+                overflow-y:scroll;
+                width: 90%;
+                display:block;
+                column-span: all;
+              }
+            
+        </style>
+    </head>
+    <body class="cui">
+        <form name = "location" action="{{ url_for('test')}}" method="post" >
+        <header class="header header--tall">
+            <div class="header-bar container">
+                <a href="javascript:;" class="header-bar__logo">
+                    <span class="icon-cisco"></span>
+                </a>
+                <div class="header-bar__main">
+                    <div class="header-heading">
+                        <h1 class="page-title">Location-Based Policy Manager</h1>
+                    </div>
+                    <div class="header-menus">
+                        <ul class="nav nav-tabs">
+                            <li class="tab">
+                                <a href="index"><div class="tab__heading" title="Policy">Home</div></a>
+                            </li>
+                            <li class="tab">
+                                <a href="test"><div class="tab__heading" title="Policy">Policy</div></a>
+                            </li>
+                            <li class="tab active">
+                                <a href="bootstrap"><div class="tab__heading" title="Admin">Admin</div></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="header-toolbar">
+                    <a href="javascript:;" class="btn btn--icon">
+                        <span class="icon-cog"></span>
+                    </a>
+                </div>
+             </div>
+            </header>
 
-    <style>
-
-
-
-
-    </style>
-</head>
-
-<body>
-
-    <form name = "bootstrap" action="{{ url_for('bootstrap')}}" method="post" >
-
-        <h1><img src="/static/cmx.png" height="42" width="42">   Location Policy: Update Server Configuration</h1>
-
-
-<!--
-{#
-
-
-#}
--->
-
-        <div id="ise"><strong>ISE Server details:</strong><br>
-        Host:  <input type="text" name="ise_host" value="{{ vars['ise_server']['host'] }}"> <br>
-        Port:  <input type="text" name="ise_port" value="{{ vars['ise_server']['port'] }}"> <br>
-        Username:  <input type="text" name="ise_user" value="{{ vars['ise_server']['user'] }}"> <br>
-        Password:  <input type="password" name="ise_password" value="{{ vars['ise_server']['pass'] }}"> <br>
-        Server:  <input type="text" name="ise_server_name" value="{{ vars['ise_server']['server_name'] }}"> <br>
+        <div class="row">
+            <div class="col-md-1"> </div>        
+            <div class="col-md-9">
+                <h4 class="base-margin-top">Location Policy Server Configuration</h4>
+            </div>
         </div>
-        <br><br>
+        <div class="row">
+            <div class="col-md-1"> </div>
+            <div class="col-md-9" margin="0px">
+   
 
-        <div><strong>CMX Server details:</strong><br>
-        Host:  <input type="text" name="cmx_host" value="{{ vars['cmx_server']['host'] }}"> <br>
-        Port:  <input type="text" name="cmx_port" value="{{ vars['cmx_server']['port'] }}"> <br>
-        Username:  <input type="text" name="cmx_user" value="{{ vars['cmx_server']['user'] }}"> <br>
-        Password:  <input type="password" name="cmx_password" value="{{ vars['cmx_server']['pass'] }}"> <br>
+                <div id="ise"><strong>ISE Server details:</strong><br>
+                
+                <div class="col-md-3">
+                    <div class="form-group input--compressed">
+                        <div class="form-group__text">
+                            <input id="input-layout-inline" type="text" name="ise_host" value="{{ vars['ise_server']['host'] }}">
+                            <label for="input-layout-inline">Host</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="form-group input--compressed">
+                        <div class="form-group__text">
+                            <input id="input-layout-inline" type="text" name="ise_port" value="{{ vars['ise_server']['port'] }}">
+                            <label for="input-layout-inline">Port</label>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+                
+            
+               
+                <div>
+                    Host:  <input type="text" name="ise_host" value="{{ vars['ise_server']['host'] }}"> <br>
+                    Port:  <input type="text" name="ise_port" value="{{ vars['ise_server']['port'] }}"> <br>
+                    Username:  <input type="text" name="ise_user" value="{{ vars['ise_server']['user'] }}"> <br>
+                    Password:  <input type="password" name="ise_password" value="{{ vars['ise_server']['pass'] }}"> <br>
+                    Server:  <input type="text" name="ise_server_name" value="{{ vars['ise_server']['server_name'] }}"> <br>
+                </div>
+                <br><br>
+
+                <div><strong>CMX Server details:</strong><br>
+                    Host:  <input type="text" name="cmx_host" value="{{ vars['cmx_server']['host'] }}"> <br>
+                    Port:  <input type="text" name="cmx_port" value="{{ vars['cmx_server']['port'] }}"> <br>
+                    Username:  <input type="text" name="cmx_user" value="{{ vars['cmx_server']['user'] }}"> <br>
+                    Password:  <input type="password" name="cmx_password" value="{{ vars['cmx_server']['pass'] }}"> <br>
+                </div>
+         
 
 
+                {%- if token == 'yes' -%}
+                 <br><br>
+                <div><strong>Enter Webex Bot Token:</strong><br>
+                    Token:  <input type="password" name="bot_token"  value="{{ vars['bot']['token'] }}">
+                    {%- endif -%}
+                    <br><br><br><br>
+                </div>
+  
+                   
+</div>             
+         </div>
+         </div>
+    
+         <div class="row">
+            <div class="col-md-1"> </div>    
+            <div class="col-md-9">
+                <button class="btn btn--primary" type="submit" value="Submit">Submit</button>
+                <button class="btn btn--primary base-margin-top base-margin-bottom" type="reset" value="reset" >Reset</button>
+           </div>             
+         </div>                  
+   
 
+                
+                
+                
+        <footer class="footer footer--basic">
+            <div class="footer__links">    
+            </div>
+        </footer>
+  
+        </form>
 
-        {%- if token == 'yes' -%}
-         <br><br>
-            <div><strong>Enter Webex Bot Token:</strong><br>
-            Token:  <input type="password" name="bot_token"  value="{{ vars['bot']['token'] }}">
+    </body>
 
-        {%- endif -%}
-
-
-        <br><br><br><br>
-        <input type="submit" value="Submit">
-        <input type="reset">
-
-    </form>
-
-<p>Click the "Submit" button to submit the query or "Reset" to set the form to default.</p>
-
-
-
-
-
-</body>
 </html>

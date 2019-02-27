@@ -100,30 +100,32 @@ def blacklist(mac_address):
     # 1. blacklist it in local policy,
     # 2. blacklist in ISE
     # 3. issue CoA.
+    print("trying to blacklist ", mac_address)
     if policy.in_blacklist(mac_address) is None:
-        print(ise_get_endpoint_info(ise_server, mac_address))
+        #print(ise_get_endpoint_info(ise_server, mac_address))
         policy.blacklist(ise_get_endpoint_info(ise_server, mac_address))
-        ise_blacklist_mac(ise_server, mac_address)
-        #ise_CoA(ise_server, mac_address)
-        print("blacklisting ", mac_address)
-
+        print(ise_blacklist_mac(ise_server, mac_address))
+        ise_CoA(ise_server, mac_address)
+    else:
+        print(mac_address, " is already in blacklist.  No action taken.")
 
 
 def unblacklist(mac_address):
-    print("mac address: ", mac_address, "policy is already in policy blacklist ->", policy.in_blacklist(mac_address))
+    print("trying to unblacklist ", mac_address)
     if policy.in_blacklist(mac_address) is not None:
-        print("mac_address is already blacklisted in local policy")
         ise_unblacklist_mac(ise_server, policy.in_blacklist(mac_address))
-        #ise_CoA(ise_server, mac_address)
+        ise_CoA(ise_server, mac_address)
         policy.unblacklist(mac_address)
-        print("unblasklisted ", mac_address)
+        print("unblacklisted ", mac_address)
+    else:
+        print(mac_address, " is not in blacklist.  No action taken.")
 
 
 def mac_action(mac_address, username, zone, in_out):
-    print("******", mac_address, username, zone, in_out)
+    print("\n\n******", mac_address, username, zone, in_out)
     user_groups = ise_get_userinfo(ise_server, username).get("usergroup_names")
 
-    if in_out == "IN":
+    if in_out.upper() == "IN":
         if policy.zone_exists(zone) is False:
             zone_policy = policy.get_default()
             allow_deny = zone_policy.get("allow_deny")
@@ -186,8 +188,11 @@ def mac_action(mac_address, username, zone, in_out):
 
 
 def zone_action(changed_zones):
+    print("Applying New zone policy: ", changed_zones)
+
     for n in changed_zones:
         if n["zone_name"] != "default_policy":
+            print(cmx_get_zonedevices(cmx_server, n["zone_name"]))
             for dev in cmx_get_zonedevices(cmx_server, n["zone_name"]):
                 mac_action(dev.get("mac_address"), dev.get("username"), n["zone_name"], "In")
         else:
@@ -444,6 +449,8 @@ def bot():
 
                 print(json.dumps(changed_zones, indent=4))
 
+                if changed_zones[0]['zone_name'] == 'Default Zone':
+                    changed_zones[0]['zone_name'] = 'default_policy'
                 policy.update(changed_zones)
                 zone_action(changed_zones)
 

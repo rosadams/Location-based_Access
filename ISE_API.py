@@ -145,14 +145,14 @@ def ise_blacklist_mac(server, mac_address):
             }
         }
     """
-    return requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
+    response = requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
+    return response
 
 
 def ise_unblacklist_mac(server, mac_info):
     """ unblacklists mac_address and resets staticGroupAssignment and groupId to their original values
         (stored in mac_info dictionary).
     """
-    print(mac_info)
     call = "/ers/config/endpoint/" + mac_info.get("id")
     uri = ("https://" + server["host"] + ":" + server["port"] + call)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -167,18 +167,19 @@ def ise_unblacklist_mac(server, mac_info):
                 }
             }
         """
-    return requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
+    response = requests.put(uri, auth=(server["user"], server["pass"]), headers=headers, data=body, verify=False)
+    return response
 
 
 def ise_CoA(server, mac_address):
     # Issues a CoA for the given mac_address
-    print("It's fun to stay at the CoA")
-    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/2"
+    print("Issuing CoA for ", mac_address)
+    call = "/admin/API/mnt/CoA/Reauth/" + server.get("server_name") + "/" + mac_address.upper() + "/0"
     uri = ("https://" + server["host"] + call)
     headers = {"Content-Type": "application/xml", "Accept": "application/xml"}
     response = requests.get(uri, auth=(server["user"], server["pass"]), headers=headers, verify=False)
     print(response)
-    return
+    print(response.content)
 
 
 def main():
