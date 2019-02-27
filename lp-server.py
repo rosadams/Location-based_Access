@@ -12,7 +12,7 @@ from locationbot import get_zones, get_groups, display_zone_policy, change_zone_
 from webexbot import send_spark_get, send_spark_post, send_spark_delete, check_bot, check_webhook
 
 flasklog = logging.getLogger('werkzeug')
-#flasklog.disabled = True
+flasklog.disabled = True
 
 bot_name = ''
 WEBEX_BOT_TOKEN = 'None'
@@ -494,7 +494,7 @@ def config_update():
             zones[zone['zone_name']] = render_policy(submit_policy, ise_groups, policy_options, zone['zone_name'])
             list_value = list_value + 1
 
-        return render_template("form_submit.html", zones=zones, default_policy=default_policy)
+        return render_template("form_submitv2.html", zones=zones, default_policy=default_policy)
 
     else:
         changed_zones = []

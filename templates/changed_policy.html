@@ -1,49 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Location Policy Update</title>
-
-    <style>
-    option   {color: blue;}
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 80%;
-    }
-
-    td, th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
-
-    th {
-    background-color: #dddddd;
-    }
-
-    </style>
-
-</head>
-
-<body>
-
-        <h1><img src="/static/cmx.png" height="42" width="42">   Location Policy and Update</h1>
-        <div id="content">
-            The following changes has been made to the Location Policy.
+    <head>
+        <meta charset="utf-8">
+        <meta name="locale" content="US">
+        <meta name="language" content="en">
+        <meta name="country" content="US">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Location Policy Manager</title>
+        <link rel="stylesheet" href="/static/css/cui-standard.min.css">      
+        <link rel="icon" type="image/vnd.microsoft.icon" href="//www.cisco.com/favicon.ico">
+        <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="///www.cisco.com/favicon.ico">
+      
+       
+        <style>
+        table {
+        
+                height:500px; 
+                overflow-y:auto;
+                max-width: 100%;
+                display:block;
+                column-span: all;
+                white-space: nowrap;
+              }
+            
+        </style>
+    </head>
+     <body class="cui">
+        <header class="header header--tall">
+            <div class="header-bar container">
+                <a href="javascript:;" class="header-bar__logo">
+                    <span class="icon-cisco"></span>
+                </a>
+                <div class="header-bar__main">
+                    <div class="header-heading">
+                        <h1 class="page-title">Location-Based Policy Manager</h1>
+                    </div>
+                    <div class="header-menus">
+                        <ul class="nav nav-tabs">
+                            <li class="tab active">
+                                <a href="test"><div class="tab__heading" title="Policy">Policy</div></a>
+                            </li>
+                            <li class="tab">
+                                <a href="bootstrap"><div class="tab__heading" title="Admin">Admin</div></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="header-toolbar">
+                    <a href="javascript:;" class="btn btn--icon">
+                        <span class="icon-cog"></span>
+                    </a>
+                </div>
+             </div>
+            </header>
+                
+               
+               
+   <div class="row">
+        <div class="col-md-1"> </div>
+        
+        <div class="col-md-9">
+            <h4 class="base-margin-top">Location Policy Updated</h4>
         </div>
-        <br><br>
+   </div>        
+   
+   
+  <div class="row">
+        <div class="col-md-1"> </div> 
+        <div class="col-md-9">  
+           <div id="content">
+                    The following changes have been made to the Location Policy.
+           </div>
+         </div> 
+  </div>      
 
-    {%- if changed_zones -%}
+    <div class="row">
+        <div class="col-md-1"> </div> 
+        <div class="col-md-9">  
 
-        <table>
-          <tr>
-            <th>Zone</th>
-            <th>Policy</th>
-            <th>Groups</th>
-          </tr>
 
-    {%- for zone in changed_zones -%}
+            {%- if changed_zones -%}
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>Zone</th>
+                    <th>Policy</th>
+                    <th>Groups</th>
+                </tr>
+
+                {%- for zone in changed_zones -%}
                 <tr>
                     <td>{{ zone.zone_name }}</td>
 
@@ -52,16 +99,25 @@
 
                 </tr>
 
-    {%- endfor -%}
-            </table>
+                {%- endfor -%}
+                        </table>
 
-    {%- endif -%}
-
-<br><br>
- <form name = "location" action="{{ url_for('config_update')}}" method="get" >
-        <input type="submit" value="Change Additional Zones">
-
-    </form>
-
+                {%- endif -%}
+                
+                 <form name = "location" action="{{ url_for('config_update')}}" method="get">
+                 <button class="btn btn--primary" type="submit" value="Submit">Change Additional Zones</button>
+                </form>
+                 <br><br>
+                 
+            
+                 
+          <footer class="footer footer--basic">
+            <div class="footer__links">    
+            </div>
+         </footer>
+                 
+          
+         </div> 
+      </div>   
 </body>
 </html>
